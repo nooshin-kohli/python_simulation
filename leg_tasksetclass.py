@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: Nooshin Kohli
+
 """
 
 from numpy.linalg import inv, pinv
@@ -30,7 +30,7 @@ class TaskSet(object):
                                            
         self.world_normal_list = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
                                       
-        self.contact_feet_name_list = ['foot']
+        self.contact_feet_name_list = [['foot_1_x', 'foot_1_y', 'foot_1_z']]
                                        
         self.swing_feet_name_list = [['foot_swing_x', 'foot_swing_y', 'foot_swing_z']]
                                        
@@ -57,8 +57,7 @@ class TaskSet(object):
 #        task_name != self.contact_feet_name_list[\
 #        self.feet_body_id_list.index(body_id)][world_normal.index(True)]:
 #            raise ValueError('you try to add feet contacts manually which is not allowed!')
-            
-            
+             
         self.bodies.append(body_id)
         self.points.append(body_point)
         self.normals.append(list(world_normal))
@@ -82,7 +81,7 @@ class TaskSet(object):
         return None
         
     def CheckContactFeet(self):
-        body_point = np.array([0., 0., -self.robot.body.l_end])
+        body_point = np.array([0., 0., self.robot.calf_length])
         p = self.robot.GetContactFeet(True)
         p_1 = p[-1]
         try: 
@@ -90,13 +89,14 @@ class TaskSet(object):
         except:
             p_2 = []
             
-        for leg in [1, 2, 3, 4]:
+        for leg in [1]:
             if leg in p_1 and leg not in p_2: #touchdown
                 if len(p) > 1:
                     for name in self.swing_feet_name_list[leg - 1]:
                         self.RemoveTask(name)
                 for i, name in enumerate(self.contact_feet_name_list[leg - 1]):
                     if name not in self.names:
+                        print(i)
                         self.AddTask(self.feet_body_id_list[leg - 1], \
                                 body_point, self.world_normal_list[i], 1, name, True)
                                     
@@ -207,13 +207,13 @@ class TaskSet(object):
             
             x, xdot = self.robot.CalcBodyToBase(body_id, point, True)
             
-            xddot_qddotZero = self.robot.CalcAcceleration(self.robot.q[-1, :],\
-            self.robot.qdot[-1, :], np.zeros(self.robot.qdim), body_id, point)
+            xddot_qddotZero = self.robot.CalcAcceleration(self.robot.q,\
+                self.robot.qdot, np.zeros(self.robot.qdim), body_id, point)
             
-            J = self.robot.calcJc(self.robot.model, self.robot.q[-1, :],\
+            J = self.robot.CalcJacobian(self.robot.model, self.robot.q,\
             body_id, point)
             
-            if body_id == self.robot.body.id('pelvis') and \
+            if body_id == self.robot.body.id('trunk') and \
             np.allclose(point, np.zeros_like(point)):
                 if [br for br in self.base_rotation_name_list if br in self.names]:
                     x, xdot, xddot_qddotZero, J = self.KinematicsBaseRotation(\
@@ -245,7 +245,7 @@ class TaskSet(object):
     def SetContactReference(self):
         for name in sum(self.contact_feet_name_list, []):
             if name in self.names:
-                self.__xddot_des[name] = [0, 0, None]
+                self.__xddot_des[name] = [0, 0, 0]
         return None
                 
 
@@ -304,8 +304,8 @@ class TaskSet(object):
         for keeping all the angular positions of pelvis equal to zero,
         the current formulation may work.
         """
-        x = np.append(x, self.robot.q[-1, 3:6])
-        xd = np.append(xd, self.robot.qdot[-1, 3:6])
+        x = np.append(x, self.robot.q[3:6])
+        xd = np.append(xd, self.robot.qdot[3:6])
         xdd = np.append(xdd, np.zeros(3))
         J = np.vstack((J, np.zeros((3, self.robot.qdim))))
         J[3, 3] = 1.

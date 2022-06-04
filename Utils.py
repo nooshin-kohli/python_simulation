@@ -28,11 +28,11 @@ def Anim_leg(model, body, joint, Q, time):
         for j in joint.joints:
             if j[:9] != 'reference':
                 child = joint.parent_child_body(j)[1]
-                pose = rbdl.CalcBodyToBaseCoordinates(model, q, child, np.zeros(3))
+                pose = rbdl.CalcBodyToBaseCoordinates(model, q[-1,:], child, np.zeros(3))
                 jpose[j] = pose
                 
         # manually adding foottips positions
-        pose = rbdl.CalcBodyToBaseCoordinates(model, q, model.GetBodyId('calf'), \
+        pose = rbdl.CalcBodyToBaseCoordinates(model, q[-1,:], model.GetBodyId('calf'), \
         np.array([0., 0., l_end]))
         jpose['ftip_1'] = pose
 #        print pose
@@ -66,11 +66,11 @@ def Anim_leg(model, body, joint, Q, time):
 #            if paired[i][0] == 'j_arm1_6': print p1
             
         return np.array(data, dtype = float)
-    t = np.array([0])
-    dt = .002
-    print(update_joint(model,body,joint,Q))
-    jpose = update_joint(model,body,joint,Q)
-    print(update_pairs(jpose,joint))
+    # t = np.array([0])
+    # dt = .002
+    # print(update_joint(model,body,joint,Q))
+    # jpose = update_joint(model,body,joint,Q)
+    # print(update_pairs(jpose,joint))
     
         
     def update_limbs(i, Q, limbs, model, body, joint, time):
@@ -405,20 +405,36 @@ dt = .002  # step size
 
 # initiate stats with dummy values
 q = np.zeros(4) # joint position
+# q = [0,0,0,0]
+# qdot = [0,0,0,0]
 # q[3]=0.3
-qdot = np.zeros(4) # joint velocity
+qdot = np.zeros(4) #joint velocity
 u = np.zeros(4) # control inputs
+# u[0] = 10000
 
-p = [[]] # the contact feet
+
+p = [[1]] # the contact feet
 # strange behavior when contact = [[1, 2]] and the legs are upright!!!!
 
 # instanciate robot object:
-cr = ROBOT(t, dt, q, p, mode, qdot, u)
-# print(cr.body.bodies)
-# print(cr.joint)
-anim = Anim_leg(cr.model,cr.body,cr.joint,q,t)
-plot = Plot_base_coordinate(cr,q,qdot)
-force = Plot_contact_force(cr)
+cr = ROBOT(t, dt, q=q, p=p, mode = mode, qdot=q, u= u)
+
+cr.tt_h = 0.2
+cr.slip_st_dur = 1
+# print("q======")
+# print(cr.q)
+
+# # print(cr.q)
+# # print()
+# # print(cr.qdot)
+print("====")
+print(cr.ForwardDynamics(np.zeros(8),cr.M,cr.h,cr.S,u,cr.Jc,[1]))
+# # print(cr.body.bodies)
+# # # print(cr.joint)
+# cr()
+anim = Anim_leg(cr.model,cr.body,cr.joint,cr.q,t)
+# plot = Plot_base_coordinate(cr,cr.q,cr.qdot)
+# force = Plot_contact_force(cr)
 # print(anim)
 
 

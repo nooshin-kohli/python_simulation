@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 
-@author: Nooshin Kohli
 """
 
 import numpy as np
@@ -31,7 +30,7 @@ class leg_controlclass(object):
         
         self.m = self.robot.qdim
         
-        self.n = len(self.robot.getContactFeet())*2
+        self.n = len(self.robot.GetContactFeet())*2
         
         self.Sc = np.hstack((np.eye(self.n), np.zeros((self.n, self.m - self.n))))
         self.Su = np.hstack((np.zeros((self.m - self.n, self.n)), np.eye(self.m - self.n)))
@@ -43,7 +42,7 @@ class leg_controlclass(object):
 #        JT = self.robot.Jc.T
         JT = self.robot.Jc_from_cpoints(\
         self.robot.model, self.robot.q[-1, :], self.robot.body,\
-        self.robot.getContactFeet()).T
+        self.robot.GetContactFeet()).T
         
         m, n = JT.shape
         
@@ -67,9 +66,9 @@ class leg_controlclass(object):
         
     def InverseDynamics(self, qddot_des, P, W = None, tau_0 = None):
         S = self.robot.S
-        M = self.robot.CalcM(self.robot.model, self.robot.q[-1, :])
-        h = self.robot.Calch(self.robot.model, self.robot.q[-1, :], \
-        self.robot.qdot[-1, :])
+        M = self.robot.CalcM(self.robot.model, self.robot.q[-1,:])
+        h = self.robot.Calch(self.robot.model, self.robot.q[-1,:], \
+        self.robot.qdot[-1,:])
         
         
 #        if P is None: P = np.eye(M.shape[0])
@@ -77,7 +76,7 @@ class leg_controlclass(object):
         if tau_0 is None: tau_0 = np.zeros(S.shape[0])
         
         invw = inv(W)
-        Mqh = np.dot(M, qddot_des).reshape(8,1) + h.reshape(8,1)
+        Mqh = np.dot(M, qddot_des) + h
             
         if self.n >= 3:        
             aux1 = np.dot(invw, np.dot(S, P.T))
@@ -246,19 +245,20 @@ class Control(object):
     
     def torque(self,qdd_des):
         
-        jC = self.robot.Jc_from_cpoints(self.robot.model,self.robot.q,self.robot.body,self.robot.getContactFeet())
+        jC = self.robot.Jc_from_cpoints(self.robot.model,self.robot.q[-1,:],\
+        self.robot.body,self.robot.getContactFeet())
         
 #        print('jc shape is ', jC.shape)
         
         Q,R = self.QRDecomposition(jC.T)
 #        print('Q is ' , Q , 'shape is' , Q.shape)
         
-        M = self.robot.CalcM(self.robot.model, self.robot.q)
-        h = self.robot.Calch(self.robot.model, self.robot.q, self.robot.qdot)
+        M = self.robot.CalcM(self.robot.model, self.robot.q[-1:])
+        h = self.robot.Calch(self.robot.model, self.robot.q[-1,:], self.robot.qdot[-1,:])
         
         
 #        print('qdd_des shape is ',qdd_des)
-        Mqh = np.dot(M, qdd_des).reshape(8,1) + h.reshape(8,1)
+        Mqh = np.dot(M, qdd_des).reshape(1.4) + h.reshape(1,4)
 
         
         Qc,Qu = self.computeQuQc(Q)

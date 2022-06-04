@@ -8,6 +8,7 @@ Created on Mon Aug 29 18:01:36 2016
 
 
 import sys
+from tkinter.messagebox import NO
 # sys.path.append('/home/mshahbazi/RBDL/build/python/')
 # sys.path.append('/home/zahra/rbdl-dev/build/python')
 
@@ -20,15 +21,13 @@ from scipy.interpolate import InterpolatedUnivariateSpline as intp
 
 
 from leg_robotclass import ROBOT
-from Centauro_ControlClass import Centauro_ControlClass
-from Centauro_TaskSetClass import TaskSet
-from Utils import Anim_leg, Plot_base_coordinate, Plot_foot_tip, \
-Plot_contact_force, traj_plan, Plot_ff_fb , Plot_coms, Plot_stance_positions,\
-Plot_stance_velocities,Plot_footstates, plot_steps
-from PhyParam import PhyParam, write_lua
+# from Centauro_ControlClass import Centauro_ControlClass
+# from Centauro_TaskSetClass import TaskSet
+from Utils import Anim_leg,Plot_contact_force
+# from PhyParam import PhyParam, write_lua
 
-exec(compile(open('./swing_traj/swing_traj_bezier.py', "rb").read(), './swing_traj/swing_traj_bezier.py', 'exec'))
-exec(compile(open('./functions.py', "rb").read(), './functions.py', 'exec'))
+# exec(compile(open('/home/nooshin/catkin_learn/src/python_simulation/swing_traj/swing_traj_bezier.py', "rb").read(), './swing_traj/swing_traj_bezier.py', 'exec'))
+exec(compile(open('/home/nooshin/catkin_learn/src/python_simulation/functions.py', "rb").read(), './functions.py', 'exec'))
 
 plt.close('all')
 
@@ -41,15 +40,14 @@ plt.close('all')
 # generate lua model
 # write_lua(param)
 # lua_file = 'robot2d.lua'
-mode = 'slider'
 
 # initiate time array
 t = np.array([0])
 dt = .002  # step size
 
 # initiate stats with dummy values
-q = np.zeros(4) # joint position
-qdot = np.zeros(4) # joint velocity
+q = np.zeros((1, 0)) # joint position
+qdot = np.zeros((1, 0)) # joint velocity
 u = np.zeros((1, 0)) # control inputs
 
 
@@ -57,22 +55,21 @@ p = [[]] # the contact feet
 # strange behavior when contact = [[1, 2]] and the legs are upright!!!!
 
 # instanciate robot object:
-cr = ROBOT(t, dt, q, p, mode, qdot, u)
+
+cr = ROBOT(t, dt, q=q, p=p, mode = 'slider', qdot=qdot, u= u)
 
 #==============================================================================
 # create initial configuration
 #==============================================================================
 
 #guess the initial config:
-# angle1 = np.deg2rad(20)
-# angle2 = np.deg2rad(100)
-# angle3 = np.deg2rad(80)
-cr.q=q
-cr.qdot=qdot
+angle1 = np.deg2rad(20)
+angle2 = np.deg2rad(100)
+angle3 = np.deg2rad(80)
 # cr.q[-1, cr.joint.q_i('j1h')] = np.pi + angle1
-# cr.q[-1, cr.joint.q_i('j2h')] = + angle2
-# cr.q[-1, cr.joint.q_i('j3h')] = - angle3
-# cr.q[-1, cr.joint.q_i('j1f')] = - angle1 - cr.q[-1, cr.joint.q_i('j1h')]
+cr.q[-1,0] = 0.2
+cr.q[-1,2] = -0.1
+# cr.q[3] = - angle1 - cr.q[1]
 # cr.q[-1, cr.joint.q_i('j2f')] = - angle2
 # cr.q[-1, cr.joint.q_i('j3f')] = + angle3
 
@@ -94,16 +91,16 @@ cr.qdot=qdot
 #x_foot_h = 0.72742089
 #dx0_h = np.array([3, 0])
 
-loaded = loadmat('grf-for-bounding-3.mat') 
+loaded = loadmat('/home/nooshin/catkin_learn/src/python_simulation/grf_for_bounding.mat') 
 tt = np.asscalar(loaded['tt'])
 tl = np.asscalar(loaded['tl'])
 ta = np.asscalar(loaded['ta'])
-x0_h = loaded['x0'].flatten()[:2]
-xt_h = loaded['xt'].flatten()[:2]
-xl_h = loaded['xl'].flatten()[:2]
-xa_h = loaded['xa'].flatten()[:2]
+x0_h = loaded['x0'].flatten()
+xt_h = loaded['xt'].flatten()
+xl_h = loaded['xl'].flatten()
+xa_h = loaded['xa'].flatten()
 x_foot_h = np.asscalar(loaded['x_foot'])
-dx0_h = loaded['x0'].flatten()[2:]
+dx0_h = loaded['x0'].flatten()
 
 #x_h = loaded['x'].flatten()
 #y_h = loaded['y'].flatten()
@@ -113,16 +110,16 @@ dx0_h = loaded['x0'].flatten()[2:]
 
 
 
-shift = 0.9*(cr.param.l1h + cr.param.l1f)
-cr.slip_shift = shift
-horiz_shift = np.array([shift, 0])
+# shift = 0.9*(cr.param.l1h + cr.param.l1f)
+# cr.slip_shift = shift
+# horiz_shift = np.array([shift, 0])
 
 
 # This part only for the IK of IC
-x0_f, xt_f, xl_f, xa_f, x_foot_f = \
-x0_h + horiz_shift, xt_h + horiz_shift, xl_h + horiz_shift, \
-xa_h + horiz_shift, x_foot_h + horiz_shift[0]
-dx0_f = dx0_h
+# x0_f, xt_f, xl_f, xa_f, x_foot_f = \
+# x0_h + horiz_shift, xt_h + horiz_shift, xl_h + horiz_shift, \
+# xa_h + horiz_shift, x_foot_h + horiz_shift[0]
+# dx0_f = dx0_h
 
 #x_f, y_f =  x_h + horiz_shift, y_h + horiz_shift
 
@@ -139,6 +136,7 @@ cr.slip_st_length = xl_h - xt_h
 
 
 cr.tl_h = -1/2*cr.slip_sw_dur
+cr.tl_f = cr.tl_h
 
 cr.slip_nominal_vel = dx0_h[0]
 
@@ -148,8 +146,8 @@ cr.slip_yl = xl_h[1]
 cr.xl_h = np.array([xl_h[0] - xa_h[0], xl_h[1]])
 cr.foot_pose_h = x_foot_h - xa_h[0]
 
-cr.xl_f = cr.xl_h + horiz_shift
-cr.foot_pose_f = cr.foot_pose_h + cr.slip_shift
+# cr.xl_f = cr.xl_h + horiz_shift
+# cr.foot_pose_f = cr.foot_pose_h + cr.slip_shift
 
 cr.slip_sw_xt = x_foot_h - xt_h[0]
 cr.slip_st_xl = xl_h[0] - x_foot_h
@@ -178,10 +176,10 @@ print("#################################################################3")
 #### compute IC config
 nlayer = 2
 # solve IK using root:
-res = computeInitialConfig(cr, des_config, nlayer)
-cr.q = res[:8].reshape(1, 8)
-#cr.q[0, 1] = 4
-cr.qdot = res[8:].reshape(1, 8)
+# res = computeInitialConfig(cr, des_config, nlayer)
+# cr.q = res[:8].reshape(1, 8)
+# #cr.q[0, 1] = 4
+# cr.qdot = res[8:].reshape(1, 8)
 #cr.qdot[0, 0] = 3
 flag = 1
 flag_zero_times = []
@@ -221,14 +219,15 @@ diff_lt = []
 Time_end = ta * 5
 # Time_end = 0.01
 
-cr.coms_h = cr.get_com(body_part='h')
-cr.coms_vel_h = cr.get_com(body_part='h',calc_velocity=True)[1]
-
+cr.coms_h = cr.get_com(body_part='slider')
+# cr.coms_f = cr.get_com(body_part='f')
+cr.coms_vel_h = cr.get_com(body_part='slider',calc_velocity=True)[1]
+# cr.coms_vel_f = cr.get_com(body_part='f',calc_velocity=True)[1]
 
 #qdes = cr.q[0, 3:]
 #qdes[2] += np.deg2rad(0)
 
-u = np.zeros(5)
+u = np.zeros(4)
 cr.u_feedbacks = [u]
 
 tt_s = []
@@ -295,13 +294,12 @@ while cr.t[-1][0]<=Time_end and nostop:
         # fix = 1
         if flag:
             
-            X0 = np.array([cr.get_com(body_part='h')[:2],\
-                          cr.get_com(body_part='f')[:2]]).reshape(4,1)
+            X0 = cr.get_com(body_part='slider',q=cr.q)
             tt = cr.t[-1][0]
             apex_coms.append(X0)
-            _,vel_h = cr.get_com(body_part='h',calc_velocity=True)
-            _,vel_f = cr.get_com(body_part='f',calc_velocity=True)
-            dX = np.array([vel_h,vel_f])
+            _,vel_h = cr.get_com(body_part='slider',calc_velocity=True,q=cr.q)
+            # _,vel_f = cr.get_com(body_part='f',calc_velocity=True)
+            dX = np.array([vel_h])
             apex_vels.append(dX)
             flag = 0
 
@@ -316,7 +314,7 @@ while cr.t[-1][0]<=Time_end and nostop:
         # xdd_des =  np.array([0,0]*2).reshape(4,1)
         # xd_des = np.array([0,0]*2).reshape(4,1)
         # x_des = X0 + np.array([0,0]*2).reshape(4,1)
-        x_des += np.array([X0[0][0],0.0,X0[2][0],0.0]).reshape(4,1)
+        x_des += np.array([X0[0][0],0.0,X0[2][0],0.0])
         X_des.append(x_des)
         XD_des.append(xd_des)
         XDD_des.append(xdd_des)
@@ -326,12 +324,12 @@ while cr.t[-1][0]<=Time_end and nostop:
         # print('des_yd_h',xd_des[1][0],cr.get_com(body_part='h',calc_velocity=True)[1][1])
             
         u = ctrl_stance_ID(cr,x_des,xd_des,xdd_des)
-        u = np.dot(cr.S,u).reshape(5)
+        u = np.dot(cr.S,u)
         
-    cr.coms_h = np.vstack((cr.coms_h,cr.get_com(body_part='h')))
-    cr.coms_f = np.vstack((cr.coms_f,cr.get_com(body_part='f')))
-    cr.coms_vel_h = np.vstack((cr.coms_vel_h,cr.get_com(body_part='h',calc_velocity=True)[1]))
-    cr.coms_vel_f = np.vstack((cr.coms_vel_f,cr.get_com(body_part='f',calc_velocity=True)[1]))
+    cr.coms_h = np.vstack((cr.coms_h,cr.get_com(body_part='slider',q=cr.q)))
+    # cr.coms_f = np.vstack((cr.coms_f,cr.get_com(body_part='f')))
+    cr.coms_vel_h = np.vstack((cr.coms_vel_h,cr.get_com(body_part='slider',calc_velocity=True,q=cr.q)[1]))
+    # cr.coms_vel_f = np.vstack((cr.coms_vel_f,cr.get_com(body_part='f',calc_velocity=True)[1]))
 
 
         
@@ -349,27 +347,27 @@ while cr.t[-1][0]<=Time_end and nostop:
     
     u += u_fb
     
-    hip_h = cr.CalcBodyToBase(cr.body.id('b1h'),\
-                              np.array([cr.param.lg1h,0,0]),\
+    hip_h = cr.CalcBodyToBase(cr.model.GetBodyId('hip'),\
+                              np.array([0,0,cr.calf_length]),\
                               update_kinematics=True,q=cr.q[-1,:],\
                               qdot=cr.qdot[-1,:])
     
     
-    hip_f = cr.CalcBodyToBase(cr.body.id('b1f'),\
-                                  np.array([cr.param.lg1f,0,0]),\
-                                  update_kinematics=True,q=cr.q[-1,:],\
-                                  qdot=cr.qdot[-1,:])
+    # hip_f = cr.CalcBodyToBase(cr.body.id('b1f'),\
+    #                               np.array([cr.param.lg1f,0,0]),\
+    #                               update_kinematics=True,q=cr.q[-1,:],\
+    #                               qdot=cr.qdot[-1,:])
         
-    h_com = cr.get_com(body_part='h')
-    f_com = cr.get_com(body_part='f')
-    pitch_com = np.rad2deg(np.arctan(f_com[1] - h_com[1]) / (f_com[0] - h_com[0]) )
+    h_com = cr.get_com(body_part='slider')
+    # f_com = cr.get_com(body_part='f')
+    # pitch_com = np.rad2deg(np.arctan(f_com[1] - h_com[1]) / (f_com[0] - h_com[0]) )
     
-    pitch = np.rad2deg(np.arctan(hip_f[1] - hip_h[1]) / (hip_f[0] - hip_h[0]))
+    # pitch = np.rad2deg(np.arctan(hip_f[1] - hip_h[1]) / (hip_f[0] - hip_h[0]))
     
     # plt.scatter(cr.t[-1][0],pitch,label='hip pitch')
     # plt.scatter(cr.t[-1][0],pitch_com,label='com pitch')
     # print('pitch slope = {} , com = {}'.format(pitch,pitch_com))
-    pitchs.append([pitch,pitch_com])
+    # pitchs.append([pitch,pitch_com])
     
     
     # cr.coms_h.append( cr.get_com(body_part='h'))
@@ -382,7 +380,7 @@ while cr.t[-1][0]<=Time_end and nostop:
     cr.set_input(np.dot(cr.S.T, np.clip(u, -500, 500)))
     # cr.set_input(u)
 
-    diff_coms.append(f_com[0] - h_com[0])
+    # diff_coms.append(f_com[0] - h_com[0])
     if hasattr(cr,'tt_h'):
         diff_lt.append([cr.tl_h - cr.tt_h, cr.tl_f - cr.tt_f])
     else:
@@ -404,15 +402,15 @@ diff_coms = np.array(diff_coms)
 diff_lt = np.array(diff_lt)
 
 
-"""
+
 #==============================================================================
 # Animation and plotting
 #==============================================================================
 
-# cr.u_feedbacks = np.array(cr.u_feedbacks, dtype=float)
+cr.u_feedbacks = np.array(cr.u_feedbacks, dtype=float)
 
 
-robot_anim = Anim_Centauro(cr.model, cr.body, cr.joint, cr.q, cr.t) #TODO
+robot_anim = Anim_leg(cr.model, cr.body, cr.joint, cr.q, cr.t) #TODO
 
 # Plot_footstates(Foot_h,Foot_des_h)
 # Plot_footstates(Foot_f,Foot_des_f,'f')
@@ -427,11 +425,11 @@ robot_anim = Anim_Centauro(cr.model, cr.body, cr.joint, cr.q, cr.t) #TODO
 
 # Plot_base_coordinate(cr) 
 # Plot_foot_tip(cr)   
-Plot_coms(cr)
+# Plot_coms(cr)
 # error = Plot_stance_positions(cr,X_des)
 # vel_error = Plot_stance_velocities(cr,XD_des)
 Plot_contact_force(cr)
-plot_steps(cr)
+# plot_steps(cr)
 # Plot_ff_fb(cr, cr.u_feedbacks)
 
 # plt.plot(cr.t, cr.u[:, cr.joint.q_i(which_joint+'_1') - 6])
@@ -521,4 +519,3 @@ def plot_pitch_slope(robot,pitches,tt_s,tl_s):
 
     plt.hlines(0, 0, robot.t[-1][0])
     plt.show()
-"""   

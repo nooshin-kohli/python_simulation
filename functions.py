@@ -229,7 +229,7 @@ def compute_qddot_des(robot,xdd_ref):
     jcdqd = -robot.CalcGamma(robot.getContactFeet(),robot.q,robot.qdot)
     
     # Jc = robot.Jc.reshape(4,8)
-    Jc = robot.Jc_from_cpoints(robot.q, robot.getContactFeet())
+    Jc = robot.Jc_from_cpoints(robot.q,[1])
     
     jG = robot.computeJacobianCOM('slider')
     
@@ -251,15 +251,16 @@ def compute_qddot_des(robot,xdd_ref):
     return qdd_ref
 
 def compute_xddot_des(robot,qdd_des):
-    jGh = robot.computeJacobianCOM('h')
-    jGf = robot.computeJacobianCOM('f')
+    jGh = robot.computeJacobianCOM('slider')
+    # jGf = robot.computeJacobianCOM('f')
     
-    jG = np.vstack((jGh,jGf)).reshape(4,8) 
+    # jG = np.vstack((jGh,jGf)).reshape(4,8)
+    jG = jGh 
     
-    jdqd_h,jdqd_f = robot.CalcJgdotQdot()
-    jdqd = np.vstack((jdqd_h,jdqd_f)).reshape(4,1) 
+    jdqd = robot.CalcJgdotQdot()
+    # jdqd = np.vstack((jdqd_h,jdqd_f)).reshape(4,1) 
     
-    return jdqd + np.matmul(jG,np.array(qdd_des).reshape(8,1)).reshape(4,1)
+    return jdqd + np.matmul(jG,np.array(qdd_des))
     
 
 
@@ -286,45 +287,47 @@ def slip_data(robot,base='s'):
         xx_d = [dx,dy] * 2
         xx_dd = [0,0] * 2
         
-        x = np.array(xx).reshape(4,1)
+        x = np.array(xx)
         
-        xd = np.array(xx_d).reshape(4,1)
-        xdd = np.array(xx_dd).reshape(4,1)
+        # xd = np.array(xx_d).reshape(4,1)
+        # xdd = np.array(xx_dd).reshape(4,1)
+        xd = np.array(xx_d)
+        xdd = np.array(xx_dd)
     elif base == 's':
-        x_h = robot.get_com(body_part='h')
-        x_f = robot.get_com(body_part='f')
+        x_h = robot.get_com(body_part='slider')
+        # x_f = robot.get_com(body_part='f')
         xt_h = X0[0][0]
-        xt_f = X0[2][0]
+        # xt_f = X0[2][0]
         xl_h = xt_h + robot.slip_st_length[0]
-        xl_f = xt_f + robot.slip_st_length[0]
+        # xl_f = xt_f + robot.slip_st_length[0]
         
         s_h = (x_h[0] - xt_h) / (xl_h - xt_h)
-        s_f = (x_f[0] - xt_f) / (xl_f - xt_f)
+        # s_f = (x_f[0] - xt_f) / (xl_f - xt_f)
         # s_h = s_f
         
         S.append([s_h,s_f])
         # print('s_h = {}, s_f = {}'.format(s_h,s_f))
         x_h = np.asscalar(robot.slip_fun_x_s(s_h))
-        x_f = np.asscalar(robot.slip_fun_x_s(s_f))
+        # x_f = np.asscalar(robot.slip_fun_x_s(s_f))
         dx_h = np.asscalar(robot.slip_fun_dx_s(s_h))
-        dx_f = np.asscalar(robot.slip_fun_dx_s(s_f))
+        # dx_f = np.asscalar(robot.slip_fun_dx_s(s_f))
         
         y_h = np.asscalar(robot.slip_fun_y_s(s_h)) 
-        y_f = np.asscalar(robot.slip_fun_y_s(s_f)) 
+        # y_f = np.asscalar(robot.slip_fun_y_s(s_f)) 
         dy_h = np.asscalar(robot.slip_fun_dy_s(s_h)) 
-        dy_f = np.asscalar(robot.slip_fun_dy_s(s_f))
+        # dy_f = np.asscalar(robot.slip_fun_dy_s(s_f))
         
-        x = np.array([x_h,y_h,x_f,y_f]).reshape(4,1)
-        xd = np.array([dx_h,dy_h,dx_f,dy_f]).reshape(4,1)
+        x = np.array([x_h,y_h]).reshape(2,1)
+        xd = np.array([dx_h,dy_h]).reshape(2,1)
         
         dt = robot.dt
         
         xdd_h = (dx_h - np.asscalar(robot.slip_fun_dx_s(S[-2][0]))) / dt
-        xdd_f = (dx_f - np.asscalar(robot.slip_fun_dx_s(S[-2][1]))) / dt
+        # xdd_f = (dx_f - np.asscalar(robot.slip_fun_dx_s(S[-2][1]))) / dt
         
         ydd_h = (dy_h - np.asscalar(robot.slip_fun_dy_s(S[-2][0]))) / dt 
-        ydd_f = (dy_f - np.asscalar(robot.slip_fun_dy_s(S[-2][1]))) / dt 
-        xdd = np.array([xdd_h,ydd_h,xdd_f,ydd_f]).reshape(4,1)
+        # ydd_f = (dy_f - np.asscalar(robot.slip_fun_dy_s(S[-2][1]))) / dt 
+        xdd = np.array([xdd_h,ydd_h]).reshape(2,1)
     else:
         raise Exception("slip data can be achived by base t or s. {} inserted".format(base))
     
@@ -364,10 +367,10 @@ def ctrl_state_feedbacks(robot):
     # r_f, dr_f = robot.get_com(body_part='f', calc_velocity=True)
     
     
-    r_h, dr_h = robot.CalcBodyToBase(robot.body.id('b1h'),\
-                              np.array([robot.param.lg1h,0,0]),\
-                              update_kinematics=True,q=robot.q[-1,:],\
-                              qdot=robot.qdot[-1,:],calc_velocity=True)
+    r_h, dr_h = robot.CalcBodyToBase(robot.model.GetBodyId('slider'),\
+                              np.array([0., 0., robot.calf_length]),\
+                              update_kinematics=True,q=robot.q,\
+                              qdot=robot.qdot,calc_velocity=True)
     
     
     r_f, dr_f = robot.CalcBodyToBase(robot.body.id('b1f'),\
@@ -601,11 +604,11 @@ def computeInitialConfig(robot, des_config, nlayer):
     des = np.array([x0_h, x_swing_h, x0_f, x_swing_f, \
                     dx0_h, dx_swing_h, dx0_f, dx_swing_f]).flatten()
     
-    model = Centauro_RobotClass(t, q, qdot, p, u, dt, lua_file, param)
+    model = ROBOT(t, dt, q, p, 'slider', qdot, u)
     
     if nlayer == 1:
         args = ([model, des, np, nlayer, 'first'])
-        IC = np.concatenate((robot.q[0, :], robot.qdot[0, :]))
+        IC = np.concatenate((robot.q, robot.qdot))
         res = root(CostIK, IC, args=args)
         out = res.x.flatten()
         
