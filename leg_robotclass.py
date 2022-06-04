@@ -18,10 +18,10 @@ from leg_importmodel import BodyClass3d, JointClass3d
 class ROBOT():
     def __init__(self, t, dt, q, p, mode, qdot, u, param=None,terrain = None):    
         if mode =='slider':
-            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/legRBDL.urdf")
+            self.model = rbdl.loadModel("./legRBDL.urdf")
             # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/legRBDL.urdf")
         else:
-            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/leg_RBDL.urdf")
+            self.model = rbdl.loadModel("./leg_RBDL.urdf")
             # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/leg_RBDL.urdf")
         self.fb_dim = 3
         self.qdim = self.model.q_size
