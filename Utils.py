@@ -77,13 +77,13 @@ def Anim_leg(model, body, joint, Q, time):
         jpose = update_joint(model, body, joint, Q)
 #        print jpose['hip_yaw_1'][1]
         data = update_pairs(jpose, joint)
-        print ("=====\n======")
+        # print ("=====\n======")
         # print (data)
         shape = data.shape[0]
         ############################################# TODO:for 2d plot uncomment this ############################################# 
         # for h in range(shape):
         #     data[h][1] = data[h][2]
-        print(data)
+        # print(data)
         for line, dat in zip(limbs, data):
             line.set_data(dat[0:2,])
             # print(line.set_data(dat[0:2,]))
@@ -398,41 +398,41 @@ def contact_gen(cf,fn):
     if len(cf) == 0:
         return 0
 
-mode = 'slider'
-# initiate time array
-t = np.array([0])
-dt = .002  # step size
+# mode = 'slider'
+# # initiate time array
+# t = np.array([0])
+# dt = .002  # step size
 
-# initiate stats with dummy values
-q = np.zeros(4) # joint position
-# q = [0,0,0,0]
-# qdot = [0,0,0,0]
-# q[3]=0.3
-qdot = np.zeros(4) #joint velocity
-u = np.zeros(4) # control inputs
-# u[0] = 10000
+# # initiate stats with dummy values
+# q = np.zeros(4) # joint position
+# # q = [0,0,0,0]
+# # qdot = [0,0,0,0]
+# # q[3]=0.3
+# qdot = np.zeros(4) #joint velocity
+# u = np.zeros(4) # control inputs
+# # u[0] = 10000
 
 
-p = [[1]] # the contact feet
-# strange behavior when contact = [[1, 2]] and the legs are upright!!!!
+# p = [[1]] # the contact feet
+# # strange behavior when contact = [[1, 2]] and the legs are upright!!!!
 
-# instanciate robot object:
-cr = ROBOT(t, dt, q=q, p=p, mode = mode, qdot=q, u= u)
+# # instanciate robot object:
+# cr = ROBOT(t, dt, q=q, p=p, mode = mode, qdot=q, u= u)
 
-cr.tt_h = 0.2
-cr.slip_st_dur = 1
-# print("q======")
-# print(cr.q)
-
+# cr.tt_h = 0.2
+# cr.slip_st_dur = 1
+# # print("q======")
 # # print(cr.q)
-# # print()
-# # print(cr.qdot)
-print("====")
-print(cr.ForwardDynamics(np.zeros(8),cr.M,cr.h,cr.S,u,cr.Jc,[1]))
-# # print(cr.body.bodies)
-# # # print(cr.joint)
-# cr()
-anim = Anim_leg(cr.model,cr.body,cr.joint,cr.q,t)
+
+# # # print(cr.q)
+# # # print()
+# # # print(cr.qdot)
+# print("====")
+# print(cr.ForwardDynamics(np.zeros(8),cr.M,cr.h,cr.S,u,cr.Jc,[1]))
+# # # print(cr.body.bodies)
+# # # # print(cr.joint)
+# # cr()
+# anim = Anim_leg(cr.model,cr.body,cr.joint,cr.q,t)
 # plot = Plot_base_coordinate(cr,cr.q,cr.qdot)
 # force = Plot_contact_force(cr)
 # print(anim)

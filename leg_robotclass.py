@@ -18,10 +18,10 @@ from leg_importmodel import BodyClass3d, JointClass3d
 class ROBOT():
     def __init__(self, t, dt, q, p, mode, qdot, u, param=None,terrain = None):    
         if mode =='slider':
-            self.model = rbdl.loadModel("./legRBDL.urdf")
+            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/legRBDL.urdf")
             # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/legRBDL.urdf")
         else:
-            self.model = rbdl.loadModel("./leg_RBDL.urdf")
+            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/leg_RBDL.urdf")
             # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/leg_RBDL.urdf")
         self.fb_dim = 3
         self.qdim = self.model.q_size
@@ -52,6 +52,7 @@ class ROBOT():
         self.total_mass = self.mass_hip+ self.mass_thigh+ self.mass_calf 
         self.S = np.hstack((np.zeros((self.qdim - self.fb_dim, self.fb_dim)), np.eye(self.qdim - self.fb_dim)))
         self.__p = list(p) # contact feet
+
 
         self.terrain = terrain
 
@@ -102,12 +103,13 @@ class ROBOT():
         x = qqdot0
         """
         p = self.__p[-1]
+        # print("p:",self.__p)
         return [
             lambda t, x: None if 1 in p else self.Touchdown(t, x, 1), 
             lambda t, x: None if 2 in p else self.Touchdown(t, x, 2),
 #            lambda t, x: None if 3 in p else self.Touchdown(t, x, 3),
 #            lambda t, x: None if 4 in p else self.Touchdown(t, x, 4),
-            lambda t, x: None if 1 not in p else self.Liftoff(t, x, 1),
+            # lambda t, x: None if 1 not in p else self.Liftoff(t, x, 1),
             lambda t, x: None if 2 not in p else self.Liftoff(t, x, 2),
 #            lambda t, x: None if 3 not in p else self.Liftoff(t, x, 3),
 #            lambda t, x: None if 4 not in p else self.Liftoff(t, x, 4),
@@ -133,6 +135,7 @@ class ROBOT():
         """
         q = x[:self.qdim]
         point = np.array([0., 0., self.calf_length])
+        # print("leg is:",leg)
         
         if leg == 1: 
             body_id = self.model.GetBodyId('calf')
@@ -142,7 +145,10 @@ class ROBOT():
 #        exec("body_id = self.body.id('b3"+repr(leg)+"')")
             
         pose = self.CalcBodyToBase(body_id, point, q = q)
-        return - (pose[2] - self.TerrainHeight(pose[0]))
+        print("pose:",pose)
+        # print(- (pose[2] - self.TerrainHeight(0.0)))
+        ################################################################ 0.8 is slider height
+        return - (pose[2] - self.TerrainHeight(0.0))
         
     def Liftoff(self, t, x, leg):
         return -1
@@ -151,7 +157,7 @@ class ROBOT():
         if hasattr(self, 'for_refine'): u = self.u[-1, :]
         else:
             # print("self.q:",self.q[-1,:])
-            yprev = np.concatenate((self.q, self.qdot), axis=1)
+            yprev = np.concatenate((self.q[-1,:], self.qdot[-1,:]))
             if np.allclose(y, yprev): u = self.u[-1, :]
             else: u = self.u0 
 #        index = self.__p0.index(leg)
@@ -268,8 +274,10 @@ class ROBOT():
         executes hybrid system
         """
         self.t0 = self.t[-1]
+        # print("self.t0:",self.t0)
         self.qqdot0 = np.concatenate((self.q[-1,:], self.qdot[-1, :])).\
         reshape(1, self.qdim*2)
+        # print(self.qqdot0)
         self.qqdot0forRefine = self.qqdot0[-1, :].copy()
         self.__p0 = self.__p[-1]
         
@@ -282,7 +290,9 @@ class ROBOT():
 #        np.array([0,self.dt]))
         
         dy = self.RK4(self.dyn_RK4)
+        # print("dy:",dy)
         self.qqdot0 += dy(self.t0, self.qqdot0[-1, :], self.dt).reshape(1, self.qdim*2)
+        # print("self.qqdot0:",self.qqdot0)
         
 
 #        print "Event detection is avoided (devel)"
@@ -292,11 +302,14 @@ class ROBOT():
         self.evt = list(self.__evts())     
         self.ev = np.array([self.evt[i](self.t0 + self.dt, \
         self.qqdot0[-1,:]) for i in range(len(self.evt))])
+        # print(self.t0 + self.dt)
+        # print("ev:",self.ev)
         
         if self.ev[-1] == 0: raise ValueError('Simulation was terminated because:\
         one of the conditions in StopSimulation() is meet.')
         
         indexes = [i for i, ev in enumerate(self.ev) if ev is not None and ev>0]
+        print("indexes:",indexes)
                    
         
         
@@ -366,15 +379,15 @@ class ROBOT():
 #                p0.remove(i - 3)
 #                if i - 3 == 1: self.tl_h = self.trefined
 #                elif i - 3 == 2: self.tl_f = self.trefined
-        print(('tl_h = ' , self.tl_h))
+        print(('tl = ' , self.tl_h))
 
         try :
             t_mem_t_1 = self.tt_h
-            t_mem_t_2 = self.tt_f
+            # t_mem_t_2 = self.tt_f
         except AttributeError:
             t_mem_t_1 = -0.2
-            t_mem_t_2 = -0.2
-        print(('last tt_h = ', t_mem_t_1))
+            # t_mem_t_2 = -0.2
+        print(('last tt = ', t_mem_t_1))
         print(('time = ',self.t[-1][0]))
         
         
@@ -712,20 +725,21 @@ class ROBOT():
             for i in range(self.point_F_dim):self.cbody_id.append(\
             self.model.GetBodyId('calf'))
         
-        
+        print("self.cbody_id = ", self.cbody_id)
         Normal = []
         for i in range(len(cp)):
             Normal.append(np.array([1., 0.]))
             Normal.append(np.array([0., 1.]))
 #            Normal.append(np.array([0., 0., 1.]))
         
-        
+        # cp = [1]
         k = len(cp)*self.point_F_dim
         # Gamma = np.zeros(k)
         Gamma = np.zeros((3,1))
         prev_body_id = 0
         
         gamma_i = np.zeros(self.point_F_dim)
+        print("len(cp)",len(cp))
         
         for i in range(k):
             
@@ -739,17 +753,18 @@ class ROBOT():
         if hasattr(self, 'for_refine'): u = self.u[-1, :]
         else:
             # print("self.q:",np.concatenate((self.q, self.qdot)))
-            yprev = np.concatenate((self.q, self.qdot), axis=1)
+            yprev = np.concatenate((self.q[-1,:], self.qdot[-1,:]))
             if np.allclose(y, yprev): u = self.u[-1, :]
             else: u = self.u0 
     #        index = self.__p0.index(leg)
         self.ComputeContactForce(y, self.__p0, u)
         if leg == 1: tt = self.tt_h
-        elif leg == 2: tt = self.tt_f
+        elif leg == 2: tt = self.tt_h
         
         if t - tt < .25*self.slip_st_dur:
             return -1
         else:
+            print("(leg - 1)*2 + 1:",(leg - 1)*2 + 1)
             return - self.Lambda[(leg - 1)*2 + 1]
     #        if leg == 1: return t - self.tt_h - self.slip_st_dur
     #        elif leg == 2: return t - self.tt_f - self.slip_st_dur
@@ -762,13 +777,15 @@ class ROBOT():
         """
         q = x[:self.qdim]
         qd = x[self.qdim:]
+        print("q is :",q)
+        print("self.__p0: ",self.__p0)
                 
         self.M = self.CalcM(q)
-        print("M is: ", self.M)
+        # print("M is: ", self.M)
         self.Jc = self.Jc_from_cpoints(q, self.__p0)
-        print("Jc is: ", self.Jc)
+        # print("Jc is: ", self.Jc)
         self.h = self.Calch( q, qd)
-        print("h is: ", self.h)
+        # print("h is: ", self.h)
         
         self.ForwardDynamics(x, self.M, self.h, self.S, self.u0, self.Jc, self.__p0) 
         
@@ -816,14 +833,16 @@ class ROBOT():
         qdim = self.qdim
         q = x[:qdim]
         qdot = x[qdim:]
+        # print(Jc.any())
+        print(np.nonzero(qdot)[0].any())
+
 
         
         if fdim == 0:
             self.qddot = np.dot(np.linalg.inv(M), np.dot(S.T, self.u0) - h).flatten()         
             self.Lambda = np.zeros(fdim)*np.nan
         else:
-            
-            
+
             if np.nonzero(qdot)[0].any() and Jc.any():
 #                tic = time.time()
 #                gamma = self.CalcGamma(cpoints, q, qdot)
@@ -834,7 +853,7 @@ class ROBOT():
             else:
                 gamma = - np.dot(np.zeros_like(Jc), qdot)
                     
-            #print("gamma:", gamma)
+            print("gamma:", gamma)
             # print("======")
             # print(gamma)
             aux1 = np.hstack((M, -Jc.T))
