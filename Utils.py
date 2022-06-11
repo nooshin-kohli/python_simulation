@@ -20,19 +20,19 @@ def Anim_leg(model, body, joint, Q, time):
 
     plt.close('all')
     
-    def update_joint(model, body, joint, Q):
+    def update_joint(model, body, joint, Q,i):
         jpose = {}
-        q = Q
+        q = Q[i,:]
         l_end = -0.240
 #        if i == 1: print q[1]
         for j in joint.joints:
             if j[:9] != 'reference':
                 child = joint.parent_child_body(j)[1]
-                pose = rbdl.CalcBodyToBaseCoordinates(model, q[-1,:], child, np.zeros(3))
+                pose = rbdl.CalcBodyToBaseCoordinates(model, q, child, np.zeros(3))
                 jpose[j] = pose
                 
         # manually adding foottips positions
-        pose = rbdl.CalcBodyToBaseCoordinates(model, q[-1,:], model.GetBodyId('calf'), \
+        pose = rbdl.CalcBodyToBaseCoordinates(model, q, model.GetBodyId('calf'), \
         np.array([0., 0., l_end]))
         jpose['ftip_1'] = pose
 #        print pose
@@ -74,7 +74,7 @@ def Anim_leg(model, body, joint, Q, time):
     
         
     def update_limbs(i, Q, limbs, model, body, joint, time):
-        jpose = update_joint(model, body, joint, Q)
+        jpose = update_joint(model, body, joint, Q,i)
 #        print jpose['hip_yaw_1'][1]
         data = update_pairs(jpose, joint)
         # print ("=====\n======")
@@ -121,6 +121,7 @@ def Anim_leg(model, body, joint, Q, time):
     
     
     args = (Q, limbs, model, body, joint, time)
+    # print("Q is :", Q)
     robot_ani = animation.FuncAnimation(fig, update_limbs, len(Q), fargs=args,
                                interval=1, blit=False, repeat_delay=5000)
     

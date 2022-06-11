@@ -23,15 +23,17 @@ class ROBOT():
         else:
             self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/leg_RBDL.urdf")
             # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/leg_RBDL.urdf")
-        self.fb_dim = 3
+        self.fb_dim = 0
         self.qdim = self.model.q_size
         if q.any(): self.q = np.array(q) # states
         else:self.q = np.zeros((1,self.qdim)) 
         if qdot.any(): self.qdot = np.array(qdot) # states
         else: self.qdot = np.zeros((1,self.qdim)) 
         self.__p = list(p) # contact feet
-        if u.any(): self.u = np.array(u) # joint inputs
-        else: self.u = np.zeros((1, self.qdim - self.fb_dim))
+        if u.any(): self.u = np.array(u)# joint inputs
+        else: 
+            self.u = np.zeros((1, self.qdim - self.fb_dim))
+            print("at this line")
         self.body = BodyClass3d()
         self.joint = JointClass3d()
         self.g0 = -9.81
@@ -51,6 +53,10 @@ class ROBOT():
         self.mass_calf = 0.133
         self.total_mass = self.mass_hip+ self.mass_thigh+ self.mass_calf 
         self.S = np.hstack((np.zeros((self.qdim - self.fb_dim, self.fb_dim)), np.eye(self.qdim - self.fb_dim)))
+        ############################################
+        # self.s = np.hstack((self.S,np.zeros((4,))))
+
+        # print("self.S:",self.S)
         self.__p = list(p) # contact feet
 
 
@@ -475,8 +481,6 @@ class ROBOT():
     def set_input(self, tau):
         if len(tau) == self.qdim: self.u0 = np.dot(self.S, tau)
         else: self.u0 = tau
-        # print(self.u0)
-#        print self.u0
         return None
     
     def CalcM(self,q):
@@ -725,7 +729,7 @@ class ROBOT():
             for i in range(self.point_F_dim):self.cbody_id.append(\
             self.model.GetBodyId('calf'))
         
-        print("self.cbody_id = ", self.cbody_id)
+        # print("self.cbody_id = ", self.cbody_id)
         Normal = []
         for i in range(len(cp)):
             Normal.append(np.array([1., 0.]))
@@ -733,13 +737,15 @@ class ROBOT():
 #            Normal.append(np.array([0., 0., 1.]))
         
         # cp = [1]
-        k = len(cp)*self.point_F_dim
+        # k = len(cp)*self.point_F_dim
+        k = 1
+        # print("k:",k)
         # Gamma = np.zeros(k)
         Gamma = np.zeros((3,1))
         prev_body_id = 0
         
         gamma_i = np.zeros(self.point_F_dim)
-        print("len(cp)",len(cp))
+        # print("len(cp)",len(cp))
         
         for i in range(k):
             
@@ -764,7 +770,7 @@ class ROBOT():
         if t - tt < .25*self.slip_st_dur:
             return -1
         else:
-            print("(leg - 1)*2 + 1:",(leg - 1)*2 + 1)
+            # print("(leg - 1)*2 + 1:",(leg - 1)*2 + 1)
             return - self.Lambda[(leg - 1)*2 + 1]
     #        if leg == 1: return t - self.tt_h - self.slip_st_dur
     #        elif leg == 2: return t - self.tt_f - self.slip_st_dur
@@ -859,9 +865,14 @@ class ROBOT():
             aux1 = np.hstack((M, -Jc.T))
             aux2 = np.hstack((Jc, np.zeros((fdim, fdim))))
             A = np.vstack((aux1, aux2))
+            # print("tau: ",tau)
+            # print("fdim: ", )
             B = np.vstack(((tau - h).reshape(qdim, 1), gamma.reshape(fdim, 1)))
             res = np.dot(np.linalg.inv(A), B).flatten()
             self.qddot = res[:-fdim]
+            self.qddot[0] = self.g0
+            print("#######################################################")
+            print(self.qddot)
             self.SetGRF(cpoints,  res[-fdim:])                              
             
  #	    print("=======================================")

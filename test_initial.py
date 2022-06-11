@@ -41,7 +41,7 @@ dt = .005 # step size
 q = np.zeros((1, 0)) # joint position
 qdot = np.zeros((1, 0)) # joint velocity
 # u = np.zeros((1, 0)) # control inputs
-tau = np.zeros(4)
+tau = np.zeros((1, 4))
 
 
 p = [[ ]] # the contact feet
@@ -65,19 +65,22 @@ cr.slip_st_dur = 5
 angle1 = np.deg2rad(20)
 angle2 = np.deg2rad(100)
 angle3 = np.deg2rad(80)
-# cr.q[-1,0] = 0
+# cr.q[-1,0] = -0.2
 # cr.q[-1,3] = 0
-cr.qdot[-1,0] = -0.2
+# cr.qdot[-1,0] = -0.2
 
-Time_end = 10
+Time_end = 0.4
 
-tau[0] = -30
-tau[2] = 40
+# tau[0,0] = 0
+# tau[2] = 40
 
 
 while cr.t[-1][0]<=Time_end:
     # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
     cr.set_input(tau)
+    # print("cr.u:",cr.u)
+    # print("cr u0")
+    # print(cr.u0)
 
     # ct.CheckContactFeet()
     cr()
