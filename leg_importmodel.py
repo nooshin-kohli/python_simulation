@@ -6,7 +6,7 @@ class BodyClass3d(object):
     
     def __init__(self):
         
-        self.bodies = ['jump','hip','thigh','calf']
+        self.bodies = ['trunk''jump','hip','thigh','calf']
         return None
 
 
@@ -28,7 +28,7 @@ class JointClass3d(object):
     
     def __init__(self):
         
-        self.joints = ['jumper','hip_joint','thigh_joint','calf_joint']
+        self.joints = ['jumper','hip_joint','thigh_joint','calf_joint','trunk_to_world']
         
         self.bodies = BodyClass3d()
         
@@ -50,6 +50,7 @@ class JointClass3d(object):
         pairs = []
     
         # manually pair joints:
+        pairs.append(['trunk_to_world', 'jumper'])
         pairs.append(['jumper', 'hip_joint'])
         pairs.append(['hip_joint', 'thigh_joint'])
         pairs.append(['thigh_joint', 'calf_joint'])

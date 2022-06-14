@@ -41,7 +41,7 @@ dt = .005 # step size
 q = np.zeros((1, 0)) # joint position
 qdot = np.zeros((1, 0)) # joint velocity
 # u = np.zeros((1, 0)) # control inputs
-tau = np.zeros((1, 4))
+tau = np.zeros(4)
 
 
 p = [[ ]] # the contact feet

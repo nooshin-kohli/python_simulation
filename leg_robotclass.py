@@ -80,7 +80,7 @@ class ROBOT():
             return 0
     
     def CalcJacobian(self, model, q, bodyid, point):
-        Jc = np.zeros((3, model.qdim))
+        Jc = np.zeros((3, self.qdim))
         rbdl.CalcPointJacobian (model, q, bodyid, point, Jc)
         return Jc
 
@@ -93,15 +93,17 @@ class ROBOT():
         return jc
 
     def Jc_from_cpoints(self, q, cpoints):
-        
-        # Jc = np.array([])
-        Jc = np.zeros((3,self.qdim))
-        # print("======")
-        # print(cpoints)    
 
-        Jc = self.calcJc(q)
+        Jc = np.array([])
 
-        return Jc
+        if 1 in cpoints:
+            Jc_ = self.CalcJacobian(self.model, q, self.model.GetBodyId('calf'), self.end_point)
+            Jc = np.append(Jc, Jc_[:2, :])
+
+        # Jc = self.calcJc(q)
+
+        return Jc.reshape(np.size(Jc) // self.model.dof_count, self.model.dof_count)
+
 
 
     def __evts(self):
@@ -681,7 +683,7 @@ class ROBOT():
         q = qqdot[:self.qdim] 
         qdot = qqdot[self.qdim:]
         Jc = self.calcJc(q)
-        # Jc = self.Jc_from_cpoints(self.model, q, self.body, p)                             # TODO: Nooshin get this function
+        Jc = self.Jc_from_cpoints(q, p)                             # TODO: Nooshin get this function
         M = self.CalcM(q)   
         h = self.Calch(q, qdot)
         # print(M)
@@ -736,12 +738,12 @@ class ROBOT():
             Normal.append(np.array([0., 1.]))
 #            Normal.append(np.array([0., 0., 1.]))
         
-        # cp = [1]
-        # k = len(cp)*self.point_F_dim
-        k = 1
+        cp = [1]
+        k = len(cp)*self.point_F_dim
+        # k = 1
         # print("k:",k)
-        # Gamma = np.zeros(k)
-        Gamma = np.zeros((3,1))
+        Gamma = np.zeros(k)
+        # Gamma = np.zeros((3,1))
         prev_body_id = 0
         
         gamma_i = np.zeros(self.point_F_dim)
@@ -870,9 +872,9 @@ class ROBOT():
             B = np.vstack(((tau - h).reshape(qdim, 1), gamma.reshape(fdim, 1)))
             res = np.dot(np.linalg.inv(A), B).flatten()
             self.qddot = res[:-fdim]
-            self.qddot[0] = self.g0
             print("#######################################################")
             print(self.qddot)
+            print(res)
             self.SetGRF(cpoints,  res[-fdim:])                              
             
  #	    print("=======================================")
@@ -882,7 +884,7 @@ class ROBOT():
 #            print 'p, lambda:', self.__p[-1], self.Lambda
 #            print "======================================="
         
-        return res
+        return None
 
     def GetContactFeet(self, total = False):
         if not total: return self.__p[-1]
@@ -919,7 +921,7 @@ class ROBOT():
         return J
 
     def UpdateQdotCollision(self, q, qdot, p0, W = None):
-        J = self.Jc_from_cpoints(q,1)
+        J = self.Jc_from_cpoints(q,[1])
         if W is None: W = self.CalcM(q)
         invW = np.linalg.inv(W)
         aux1 = np.dot(invW, J.T)

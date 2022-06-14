@@ -26,7 +26,7 @@ def Anim_leg(model, body, joint, Q, time):
         l_end = -0.240
 #        if i == 1: print q[1]
         for j in joint.joints:
-            if j[:9] != 'reference':
+            if j[:9] != 'trunk':
                 child = joint.parent_child_body(j)[1]
                 pose = rbdl.CalcBodyToBaseCoordinates(model, q, child, np.zeros(3))
                 jpose[j] = pose
@@ -151,17 +151,17 @@ def Anim_leg(model, body, joint, Q, time):
     
     
 def Plot_base_coordinate(cr,q,qdot):
-    
+
     x, xdot = [], []
-    
+
     for i in range(len(cr.t)):
-    
+
         xx, xxdot = cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.zeros(3), True, index = i,q=q,qdot=qdot)
-            
+
         x.append(xx); xdot.append(xxdot)
-    
+
     x = np.array(x); xdot = np.array(xdot)
-        
+
     plt.figure()
     plt.subplot(311)
     plt.grid(1)
@@ -175,7 +175,7 @@ def Plot_base_coordinate(cr,q,qdot):
     plt.grid(1)
     plt.plot(cr.t, x[:, 2])
     plt.ylabel('z')
-    
+
     plt.figure()
     plt.grid(1)
     plt.subplot(311)
@@ -190,7 +190,7 @@ def Plot_base_coordinate(cr,q,qdot):
     plt.grid(1)
     plt.plot(cr.t, xdot[:, 2])
     plt.ylabel('$\dot{z}$')
-    
+
     plt.show()
     return None
     
