@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug 29 18:01:36 2016
+testing simulation
 
-@author: mshahbazi
+@author: nooshin
 """
 
 from __future__ import division
@@ -41,7 +41,8 @@ dt = .005 # step size
 q = np.zeros((1, 0)) # joint position
 qdot = np.zeros((1, 0)) # joint velocity
 # u = np.zeros((1, 0)) # control inputs
-tau = np.zeros(4)
+tau = np.zeros(3)
+# tau[0,0] = -20
 
 
 p = [[ ]] # the contact feet
@@ -49,14 +50,14 @@ p = [[ ]] # the contact feet
 
 # instanciate robot object:
 
-cr = ROBOT(t, dt, q=q, p=p, mode = 'slider', qdot=qdot, u= tau)
+cr = ROBOT(t, dt, q=q, p=p, mode = 'leg', qdot=qdot, u= tau)
 ct = TaskSet(cr)
 cc = leg_controlclass(cr)
-cr.tt_h = 0.001
-cr.tl_h = 0.003
-cr.tt_f = 0.001
-cr.tl_f = 0.003
-cr.slip_st_dur = 0.005
+cr.tt_h = 0.1
+cr.tl_h = 0.3
+cr.tt_f = 0.1
+cr.tl_f = 0.3
+cr.slip_st_dur = 5
 
 ######################################
 #### create initial configuration ####
@@ -65,13 +66,13 @@ cr.slip_st_dur = 0.005
 angle1 = np.deg2rad(20)
 angle2 = np.deg2rad(100)
 angle3 = np.deg2rad(80)
-# cr.q[-1,0] = -0.2
+cr.q[-1,2] = -0.1
 # cr.q[-1,3] = 0
 # cr.qdot[-1,0] = -0.2
 
-Time_end = 0.4
+Time_end = 2
 
-# tau[0,0] = 0
+# tau[0,2] = 20
 # tau[2] = 40
 
 
@@ -90,7 +91,7 @@ while cr.t[-1][0]<=Time_end:
 #toc = time.time() - tic
 
 #print toc
-print(cr.q)
+# print(cr.q)
 robot_anim = Anim_leg(cr.model, cr.body, cr.joint, cr.q, cr.t)
 #x_des = np.zeros(3)
 

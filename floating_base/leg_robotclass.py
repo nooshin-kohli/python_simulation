@@ -3,6 +3,7 @@
    Year : 2021-2022
 '''
 from doctest import Example
+from traceback import print_tb
 from matplotlib.pyplot import axis
 import numpy as np
 import sys
@@ -25,6 +26,7 @@ class ROBOT():
             # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/leg_RBDL.urdf")
         self.fb_dim = 0
         self.qdim = self.model.q_size
+        # print("self.qdim: ", self.qdim)
         if q.any(): self.q = np.array(q) # states
         else:self.q = np.zeros((1,self.qdim)) 
         if qdot.any(): self.qdot = np.array(qdot) # states
@@ -46,18 +48,19 @@ class ROBOT():
         else:
             self.body.l_end = self.param.l3h
 
-        self.point_F_dim = 1                                                     # TODO: check this
+        self.point_F_dim = 2                                                     # TODO: check this
         
         self.mass_hip = 0.63
         self.mass_thigh = 1.062
         self.mass_calf = 0.133
-        self.total_mass = self.mass_hip + self.mass_thigh + self.mass_calf
-        self.S = np.hstack((np.zeros((self.qdim - self.fb_dim, self.fb_dim)), np.eye(self.qdim - self.fb_dim)))
+        self.total_mass = self.mass_hip+ self.mass_thigh+ self.mass_calf 
+        self.S = np.hstack((np.eye(self.qdim - self.fb_dim),np.zeros((self.qdim - self.fb_dim, self.fb_dim))))
+        # self.S = np.array([[1,0,0],[0,1,0],[0,0,1]])
         ############################################
-        # self.s = np.hstack((self.S,np.zeros((4,))))
+        # self.s = np.hstack((self.S,np.zeros((4,1))))
 
-        # print("self.S:",self.S)
-        # self.__p = list(p) # contact feet
+        print("self.S:",self.S)
+        self.__p = list(p) # contact feet
 
 
         self.terrain = terrain
@@ -67,9 +70,9 @@ class ROBOT():
         self.t = np.array([t])
         self.dt = dt 
 
-        self.Jc = self.calcJc(self.q[-1, :].flatten())
-        self.h = self.Calch(self.q[-1, :].flatten(),self.qdot[-1, :].flatten())
-        self.M = self.CalcM(self.q[-1, :].flatten())
+        self.Jc = self.calcJc(self.q[-1,:].flatten())
+        self.h = self.Calch(self.q[-1,:].flatten(),self.qdot[-1,:].flatten())
+        self.M = self.CalcM(self.q[-1,:].flatten())
 
         self.foot_pose_h = 0
         self.q_des = [0]
@@ -93,17 +96,16 @@ class ROBOT():
         return jc
 
     def Jc_from_cpoints(self, q, cpoints):
-
         Jc = np.array([])
 
         if 1 in cpoints:
             Jc_ = self.CalcJacobian(self.model, q, self.model.GetBodyId('calf'), self.end_point)
             Jc = np.append(Jc, Jc_[:2, :])
+   
 
         # Jc = self.calcJc(q)
 
-        return Jc.reshape(np.size(Jc) // self.model.dof_count, self.model.dof_count)
-
+        return Jc.reshape(np.size(Jc)//self.model.dof_count, self.model.dof_count)
 
 
     def __evts(self):
@@ -113,7 +115,7 @@ class ROBOT():
         p = self.__p[-1]
         # print("p:",self.__p)
         return [
-            # lambda t, x: None if 1 in p else self.Touchdown(t, x, 1),
+            # lambda t, x: None if 1 in p else self.Touchdown(t, x, 1), 
             # lambda t, x: None if 2 in p else self.Touchdown(t, x, 2),
 #            lambda t, x: None if 3 in p else self.Touchdown(t, x, 3),
 #            lambda t, x: None if 4 in p else self.Touchdown(t, x, 4),
@@ -141,7 +143,7 @@ class ROBOT():
         """
         should return a positive value if leg penetrated the ground
         """
-        print("leg is in touchdown!!!!!!!!!!")
+        print("leg is in touchdown: ", leg)
         q = x[:self.qdim]
         point = np.array([0., 0., self.calf_length])
         # print("leg is:",leg)
@@ -157,14 +159,13 @@ class ROBOT():
         print("pose:",pose)
         # print(- (pose[2] - self.TerrainHeight(0.0)))
         ################################################################ 0.8 is slider height
-        return - (pose[2] - self.TerrainHeight(0.0))
+        return - (pose[2] - self.TerrainHeight(pose[0]))
         
     def Liftoff(self, t, x, leg):
-        print("leg is in Liftoff mode!!!!!")
         return -1
         
     def Liftoff_GRF(self, t, y, leg):
-        print("leg is in liftoff GRF mode!!!!!")
+        print("leg is: ",leg)
         if hasattr(self, 'for_refine'): u = self.u[-1, :]
         else:
             # print("self.q:",self.q[-1,:])
@@ -312,7 +313,7 @@ class ROBOT():
         self.ev_i = None
         self.evt = list(self.__evts())     
         self.ev = np.array([self.evt[i](self.t0 + self.dt, \
-        self.qqdot0[-1, :]) for i in range(len(self.evt))])
+        self.qqdot0[-1,:]) for i in range(len(self.evt))])
         # print(self.t0 + self.dt)
         # print("ev:",self.ev)
         
@@ -320,7 +321,7 @@ class ROBOT():
         one of the conditions in StopSimulation() is meet.')
         
         indexes = [i for i, ev in enumerate(self.ev) if ev is not None and ev>0]
-        print("indexes:",indexes)
+        # print("indexes:",indexes)
                    
         
         
@@ -334,6 +335,7 @@ class ROBOT():
             tr_list, qqdot0_list, index_list = [], [], []
             for i in indexes:
                 if i in [4, 5]:
+                    print("this condition")
                     tr, qqdot0 = self.t0, self.qqdot0forRefine.reshape(1, self.qdim*2)
                     #TODO: tr , qqdot0 = self.interpl(self.evt[i]) 
                 else:
@@ -403,7 +405,7 @@ class ROBOT():
         
         
         
-        print("self.ev_i",self.ev_i)
+        print("self.ev_i: ", self.ev_i)   
         if self.ev_i == 0:#and not 1 in p0 # touchdown of hind leg
             p0.append(1)
             qdot = self.UpdateQdotCollision(q, qdot, p0)
@@ -411,12 +413,12 @@ class ROBOT():
             self.foot_pose_h = self.computeFootState('slider', q = q)[0]
             self.xt_h = self.get_com(body_part = 'slider', q = q) 
             
-        # elif self.ev_i == 1: # and not 2 in p0 # touchdown of fore leg
-        #     p0.append(2)
-        #     qdot = self.UpdateQdotCollision(q, qdot, p0)
-        #     self.tt_f = self.trefined
-        #     self.foot_pose_f = self.computeFootState('slider', q = q)[0]
-        #     self.xt_f = self.get_com(body_part = 'slider', q = q)
+        elif self.ev_i == 1: # and not 2 in p0 # touchdown of fore leg
+            p0.append(2)
+            qdot = self.UpdateQdotCollision(q, qdot, p0)
+            self.tt_f = self.trefined
+            self.foot_pose_f = self.computeFootState('slider', q = q)[0]
+            self.xt_f = self.get_com(body_part = 'slider', q = q) 
             
         elif self.ev_i == 4 and 1 in p0: # liftoff of hind leg
             p0.remove(1)
@@ -428,11 +430,11 @@ class ROBOT():
 #            max(self.slip_sw_dur, self.predictNextLiftoff(self.xl_h[1], self.dxl_h[1]))
             
             
-        # elif self.ev_i == 5 and 2 in p0: # liftoff of fore leg
-        #     p0.remove(2)
-        #     self.tl_f = self.trefined
-        #     self.xl_f, self.dxl_f = \
-        #     self.get_com(body_part = 'slider', q = q, calc_velocity = True)
+        elif self.ev_i == 5 and 2 in p0: # liftoff of fore leg
+            p0.remove(2)
+            self.tl_f = self.trefined
+            self.xl_f, self.dxl_f = \
+            self.get_com(body_part = 'slider', q = q, calc_velocity = True)
             #TODO: should be leg specific?
 #            self.slip_sw_dur = \
 #            max(self.slip_sw_dur, self.predictNextLiftoff(self.xl_f[1], self.dxl_f[1]))
@@ -489,7 +491,7 @@ class ROBOT():
         return None
     
     def CalcM(self,q):
-        M = np.zeros((self.model.q_size,self.model.q_size))
+        M = np.zeros((self.qdim,self.qdim))
         rbdl.CompositeRigidBodyAlgorithm(self.model, q, M, True)
         # self.CalcM= M
         return M
@@ -570,9 +572,9 @@ class ROBOT():
                 jdqds[body] = gamma_i
         
         
-        M = self.total_mass+0.002
+        M = self.total_mass
         
-        jdqd = (0.002 * jdqds['jump'] + self.mass_hip * jdqds['hip'] +\
+        jdqd = (self.mass_hip * jdqds['hip'] +\
                   self.mass_thigh * jdqds['thigh']+self.mass_calf * jdqds['calf']) / M
                   
                 
@@ -678,14 +680,14 @@ class ROBOT():
                             index = index, q = q, qdot = q)
 
     def Calch(self, q, qdot):
-        h = np.zeros(self.model.q_size)
-        rbdl.InverseDynamics(self.model, q, qdot, np.zeros(self.model.qdot_size), h)
+        h = np.zeros(self.qdim)
+        rbdl.InverseDynamics(self.model, q, qdot, np.zeros(self.qdim), h)
         return h
 
     def ComputeContactForce(self, qqdot, p, u):
         q = qqdot[:self.qdim] 
         qdot = qqdot[self.qdim:]
-        Jc = self.calcJc(q)
+        # Jc = self.calcJc(q)
         Jc = self.Jc_from_cpoints(q, p)                             # TODO: Nooshin get this function
         M = self.CalcM(q)   
         h = self.Calch(q, qdot)
@@ -733,31 +735,39 @@ class ROBOT():
         if 1 in cp:
             for i in range(self.point_F_dim):self.cbody_id.append(\
             self.model.GetBodyId('calf'))
+#        if 3 in cp: 
+#            for i in range(3):self.cbody_id.append(self.body.id('knee_3'))
+#        if 4 in cp: 
+#            for i in range(3):self.cbody_id.append(self.body.id('knee_4'))
         
-        # print("self.cbody_id = ", self.cbody_id)
         Normal = []
         for i in range(len(cp)):
-            Normal.append(np.array([1., 0.]))
-            Normal.append(np.array([0., 1.]))
-#            Normal.append(np.array([0., 0., 1.]))
-        
+            Normal.append(np.array([1.,0.]))
+            Normal.append(np.array([0.,1.]))
+            # Normal.append(np.array([0., 0., 1.]))
         cp = [1]
         k = len(cp)*self.point_F_dim
-        # k = 1
-        # print("k:",k)
+        print(len(cp))
+        
         Gamma = np.zeros(k)
-        # Gamma = np.zeros((3,1))
+        
         prev_body_id = 0
         
         gamma_i = np.zeros(self.point_F_dim)
-        # print("len(cp)",len(cp))
+        # print("Normal: ", np.shape(Normal))
         
         for i in range(k):
             
             if prev_body_id != self.cbody_id[i]:
-                gamma_i = rbdl.CalcPointAcceleration(self.model, q, qdot, np.zeros(self.qdim), self.cbody_id[i], self.end_point)                                         #TODO: [:2]?               
-                prev_body_id = self.cbody_id[i]  
-            Gamma = gamma_i
+                gamma_i = rbdl.CalcPointAcceleration(self.model, q,\
+                qdot, np.zeros(self.qdim), self.cbody_id[i],self.end_point)[:2]                
+                prev_body_id = self.cbody_id[i]
+                
+            # print("gamma_i: ",gamma_i)
+            print(Normal[i])
+            Gamma[i] = - np.dot(Normal[i], gamma_i)
+            # Gamma = gamma_i
+        # print("GAMA:#######",Gamma)
         return Gamma
     
     def Liftoff_GRF(self, t, y, leg):
@@ -789,20 +799,20 @@ class ROBOT():
         q = x[:self.qdim]
         qd = x[self.qdim:]
         print("q is :",q)
-        print("qdot is:",qd)
-        print("self.__p0: ",self.__p0)
+        # print("self.__p0: ",self.__p0)
                 
         self.M = self.CalcM(q)
         # print("M is: ", self.M)
         self.Jc = self.Jc_from_cpoints(q, self.__p0)
-        # print("Jc is: ", self.Jc)
+        print("Jc is: ", self.Jc)
         self.h = self.Calch( q, qd)
         # print("h is: ", self.h)
         
         self.ForwardDynamics(x, self.M, self.h, self.S, self.u0, self.Jc, self.__p0) 
         
         dx = np.concatenate((qd, self.qddot.flatten()))
-        # print(dx)
+        print("qd and qddot:")
+        print(dx)
 
         return dx
 
@@ -842,11 +852,12 @@ class ROBOT():
     
     def ForwardDynamics(self, x, M, h, S, tau, Jc, cpoints):
         fdim = np.shape(Jc)[0]
+        print("fdim: ",fdim)
         qdim = self.qdim
         q = x[:qdim]
         qdot = x[qdim:]
         # print(Jc.any())
-        print(np.nonzero(qdot)[0].any())
+        # print(np.nonzero(qdot)[0].any())
 
 
         
@@ -866,19 +877,31 @@ class ROBOT():
                 gamma = - np.dot(np.zeros_like(Jc), qdot)
                     
             print("gamma:", gamma)
-            print("======")
-            print(gamma)
+            # print("======")
+            # print(gamma)
+            # print("JC",Jc)
             aux1 = np.hstack((M, -Jc.T))
+            
             aux2 = np.hstack((Jc, np.zeros((fdim, fdim))))
             A = np.vstack((aux1, aux2))
-            # print("tau: ",tau)
-            # print("fdim: ", )
+            # print("M:", np.linalg.eigvals(M))
+            # print("JC.T: ", Jc.T)
+            # print("A:",A)
+            # print("h:",h)
+            # print("tau:", tau)
+            # print("tau-h:",tau-h)
             B = np.vstack(((tau - h).reshape(qdim, 1), gamma.reshape(fdim, 1)))
+            # print("B:", B)
+            # print("A inv:",np.linalg.inv(A))
+            # print("S is:",self.S)
             res = np.dot(np.linalg.inv(A), B).flatten()
+            # print("res:",res)
             self.qddot = res[:-fdim]
+            # self.qddot[0] += self.g0
             print("#######################################################")
             print(self.qddot)
             print(res)
+            print("cp:",cpoints)
             self.SetGRF(cpoints,  res[-fdim:])                              
             
  #	    print("=======================================")
@@ -935,4 +958,14 @@ class ROBOT():
         return qdot_after
     
 
-    
+# t = np.array([0])
+# dt = .005 # step size
+
+# # initiate stats with dummy values
+# q = np.zeros((1, 0)) # joint position
+# qdot = np.zeros((1, 0)) # joint velocity
+# # u = np.zeros((1, 0)) # control inputs
+# tau = np.zeros((1, 4))  
+# p = [[ ]]  
+# robot = ROBOT(t, dt, q=q, p=p, mode = 'leg', qdot=qdot, u= tau)
+# print(robot.model.dof_count)
