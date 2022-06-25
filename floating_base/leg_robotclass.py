@@ -14,7 +14,7 @@ dir = home + '/projects/rbdl/build/python'
 sys.path.append(dir)
 import rbdl
 from leg_importmodel import BodyClass3d, JointClass3d
-
+import scipy.integrate as integrate
 
 class ROBOT():
     def __init__(self, t, dt, q, p, mode, qdot, u, param=None,terrain = None):    
@@ -115,7 +115,7 @@ class ROBOT():
         p = self.__p[-1]
         # print("p:",self.__p)
         return [
-            # lambda t, x: None if 1 in p else self.Touchdown(t, x, 1), 
+            lambda t, x: None if 1 in p else self.Touchdown(t, x, 1), 
             # lambda t, x: None if 2 in p else self.Touchdown(t, x, 2),
 #            lambda t, x: None if 3 in p else self.Touchdown(t, x, 3),
 #            lambda t, x: None if 4 in p else self.Touchdown(t, x, 4),
@@ -143,7 +143,7 @@ class ROBOT():
         """
         should return a positive value if leg penetrated the ground
         """
-        print("leg is in touchdown: ", leg)
+        print("leg is in touchdown function")
         q = x[:self.qdim]
         point = np.array([0., 0., self.calf_length])
         # print("leg is:",leg)
@@ -157,9 +157,9 @@ class ROBOT():
             
         pose = self.CalcBodyToBase(body_id, point, q = q)
         print("pose:",pose)
-        # print(- (pose[2] - self.TerrainHeight(0.0)))
+        print(- (pose[2] - self.TerrainHeight(-0.45)))
         ################################################################ 0.8 is slider height
-        return - (pose[2] - self.TerrainHeight(pose[0]))
+        return  - (pose[2] - self.TerrainHeight(pose[0]))
         
     def Liftoff(self, t, x, leg):
         return -1
@@ -286,6 +286,7 @@ class ROBOT():
         executes hybrid system
         """
         self.t0 = self.t[-1]
+        print("self.t:",self.t)
         # print("self.t0:",self.t0)
         self.qqdot0 = np.concatenate((self.q[-1,:], self.qdot[-1, :])).\
         reshape(1, self.qdim*2)
@@ -298,12 +299,12 @@ class ROBOT():
 #        self.ComputeContactForce(self.qqdot0forRefine, self.__p0, self.u0)
 #        self.cforce.append(self.Lambda) 
 
-#        self.qqdot0 = integrate.odeint(self.__dyn, self.qqdot0[-1,:], \
-#        np.array([0,self.dt]))
+        self.qqdot0 = integrate.odeint(self.__dyn, self.qqdot0[-1,:], \
+        np.array([0,self.dt]))
         
-        dy = self.RK4(self.dyn_RK4)
-        # print("dy:",dy)
-        self.qqdot0 += dy(self.t0, self.qqdot0[-1, :], self.dt).reshape(1, self.qdim*2)
+        # dy = self.RK4(self.dyn_RK4)
+        # # print("dy:",dy)
+        # self.qqdot0 += dy(self.t0, self.qqdot0[-1, :], self.dt).reshape(1, self.qdim*2)
         # print("self.qqdot0:",self.qqdot0)
         
 
@@ -315,7 +316,7 @@ class ROBOT():
         self.ev = np.array([self.evt[i](self.t0 + self.dt, \
         self.qqdot0[-1,:]) for i in range(len(self.evt))])
         # print(self.t0 + self.dt)
-        # print("ev:",self.ev)
+        print("ev:",self.ev)
         
         if self.ev[-1] == 0: raise ValueError('Simulation was terminated because:\
         one of the conditions in StopSimulation() is meet.')
@@ -802,7 +803,7 @@ class ROBOT():
         # print("self.__p0: ",self.__p0)
                 
         self.M = self.CalcM(q)
-        # print("M is: ", self.M)
+        print("M is: ", self.M)
         self.Jc = self.Jc_from_cpoints(q, self.__p0)
         print("Jc is: ", self.Jc)
         self.h = self.Calch( q, qd)
@@ -857,7 +858,7 @@ class ROBOT():
         q = x[:qdim]
         qdot = x[qdim:]
         # print(Jc.any())
-        # print(np.nonzero(qdot)[0].any())
+        print(np.nonzero(qdot)[0].any())
 
 
         

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug 29 18:01:36 2016
 
-@author: mshahbazi
+@author: Nooshin Kohli
 """
 
 from __future__ import division
