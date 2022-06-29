@@ -1,40 +1,41 @@
-# -*- coding: utf-8 -*-
+
 """
 Created on Mon Aug 29 16:31:20 2016
 
 @author: mshahbazi
 """
-
 import numpy as np
+import sys
+from os.path import expanduser
+# import scipy.integrate as integrate
+home = expanduser("~")
+dir = home + '/projects/rbdl/build/python'
+sys.path.append(dir)
 import rbdl
-
-from Centauro_ImportModel import BodyClass2d, JointClass2d
-# import matplotlib.pyplot as plt
-# from scipy.optimize import root, approx_fprime, minimize, fminbound
-import scipy.integrate as integrate
-
-
-# import time
-# import subprocess
+from leg_importmodel import BodyClass3d, JointClass3d
 
 
 class Centauro_RobotClass(object):
 
-    def __init__(self, t, q, qdot, p, u, dt, lua_file, param=None, terrain=None):
+    def __init__(self, t, q, qdot, p, u, dt, mode, param=None, terrain=None):
+        if mode =='slider':
+            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/legRBDL.urdf")
+            # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/legRBDL.urdf")
+        else:
+            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/leg_RBDL.urdf")
+            # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/leg_RBDL.urdf")
         """
         This is Centauro robot class
         """
-        self.name = 'Centauro'
+        self.name = 'leg'
         self.param = param
 
-        self.fb_dim = 3
+        self.fb_dim = 0
         self.point_F_dim = 2
-
-        self.model = rbdl.loadModel(lua_file)
-        self.body = BodyClass2d()
-        self.joint = JointClass2d()
+        self.body = BodyClass3d()
+        self.joint = JointClass3d()
         if param is None:
-            self.body.l_end = 10
+            self.body.l_end = -0.240
         else:
             self.body.l_end = self.param.l3h
 
@@ -62,6 +63,21 @@ class Centauro_RobotClass(object):
         self.dt = dt
 
         self.terrain = terrain
+        self.g0 = 9.81
+        self.calf_length = -0.240
+        self.hip_length = -0.93
+        self.thigh_length = -0.21183
+
+
+        self.mass_hip = 0.63
+        self.mass_thigh = 1.062
+        self.mass_calf = 0.133
+
+        self.total_mass = sum([self.model.mBodies[i].mMass \
+                               for i in range(self.fb_dim, self.model.previously_added_body_id + 1)])
+
+        self.foot_pose_h = 0
+        self.foot_pose_f = 0
 
         self.Jc = self.Jc_from_cpoints( \
             self.model, self.q[-1, :], self.body, self.__p[-1])  # TODO
@@ -76,11 +92,7 @@ class Centauro_RobotClass(object):
         #
         #        self.cforce.append(self.Lambda)
 
-        self.total_mass = sum([self.model.mBodies[i].mMass \
-                               for i in range(self.fb_dim, self.model.previously_added_body_id + 1)])
 
-        self.foot_pose_h = 0
-        self.foot_pose_f = 0
 
     def __call__(self):
         """
@@ -201,6 +213,7 @@ class Centauro_RobotClass(object):
         self.ForwardDynamics(x, self.M, self.h, self.S, self.u0, self.Jc, self.__p0)
 
         dx = np.concatenate((qd, self.qddot.flatten()))
+        print(dx)
 
         return dx
 
@@ -212,6 +225,7 @@ class Centauro_RobotClass(object):
 
     def ForwardDynamics(self, x, M, h, S, tau, Jc, cpoints):
         fdim = np.shape(Jc)[0]
+        print("fdim: ", fdim)
         qdim = self.qdim
         q = x[:qdim]
         qdot = x[qdim:]
@@ -332,15 +346,17 @@ class Centauro_RobotClass(object):
 
         Jc = np.array([])
 
-        ftip_pose = np.array([body.l_end, 0., 0.])
+        ftip_pose = np.array([0., 0., self.calf_length])
 
         if 1 in cpoints:
-            Jc_ = self.CalcJacobian(model, q, body.id('b3h'), ftip_pose)
+            Jc_ = self.CalcJacobian(model, q, model.GetBodyId('calf'), ftip_pose)
             Jc = np.append(Jc, Jc_[:2, :])
 
         if 2 in cpoints:
-            Jc_ = self.CalcJacobian(model, q, body.id('b3f'), ftip_pose)
-            Jc = np.append(Jc, Jc_[:2, :])
+            print("second leg does not exist")
+
+            # Jc_ = self.CalcJacobian(model, q, body.id('b3f'), ftip_pose)
+            # Jc = np.append(Jc, Jc_[:2, :])
 
         return Jc.reshape(np.size(Jc) // model.dof_count, model.dof_count)
 
@@ -350,10 +366,11 @@ class Centauro_RobotClass(object):
 
         if 1 in cp:
             for i in range(self.point_F_dim): self.cbody_id.append( \
-                self.body.id('b3h'))
+                self.model.GetBodyId('calf'))
         if 2 in cp:
-            for i in range(self.point_F_dim): self.cbody_id.append( \
-                self.body.id('b3f'))
+            print("second leg does not exist")
+            # for i in range(self.point_F_dim):self.cbody_id.append(\
+            # self.body.id('b3f'))
         #        if 3 in cp:
         #            for i in range(3):self.cbody_id.append(self.body.id('knee_3'))
         #        if 4 in cp:
@@ -378,48 +395,50 @@ class Centauro_RobotClass(object):
             if prev_body_id != self.cbody_id[i]:
                 gamma_i = rbdl.CalcPointAcceleration(self.model, q, \
                                                      qdot, np.zeros(self.qdim), self.cbody_id[i], \
-                                                     np.array([self.body.l_end, 0., 0.]))[:2]
+                                                     np.array([0., 0., self.calf_length]))[:2]
                 prev_body_id = self.cbody_id[i]
-
+            # print("gamma_i: ", gamma_i)
             Gamma[i] = - np.dot(Normal[i], gamma_i)
+        # print("Gamma:",Gamma)
         return Gamma
 
     def CalcJgdotQdot(self):
-        actual_bodies = ['b1h', 'b2h', 'b3h', 'b1f', 'b2f', 'b3f']
+        # actual_bodies = ['b1h','b2h','b3h','b1f','b2f','b3f']
+        actual_bodies = ['jump', 'hip', 'thigh', 'calf']
         jdqds = dict()
 
         for body in self.body.bodies:
             if body in actual_bodies:
-                if body == 'b1f':
-                    pos = self.param.lg1f
-                elif body == 'b1h':
-                    pos = self.param.lg1h
-                elif body == 'b2h':
-                    pos = self.param.lg2h
-                elif body == 'b2f':
-                    pos = self.param.lg2f
-                elif body == 'b3h':
-                    pos = self.param.lg3h
-                elif body == 'b3f':
-                    pos = self.param.lg3f
-                point_position = np.array([pos, 0., 0.])
+                if body == 'jump':
+                    pos = (1 / 2) * self.hip_length
+                elif body == 'hip':
+                    pos = (1 / 2) * self.hip_length
+                elif body == 'thigh':
+                    pos = (1 / 2) * self.thigh_length
+                elif body == 'calf':
+                    pos = (1 / 2) * self.calf_length
+                point_position = np.array([0., 0., pos])
 
                 gamma_i = rbdl.CalcPointAcceleration(self.model, self.q[-1], \
-                                                     self.qdot[-1], np.zeros(self.qdim), self.body.id(body), \
+                                                     self.qdot[-1], np.zeros(self.qdim), self.model.GetBodyId(body), \
                                                      point_position)[:2]
                 jdqds[body] = gamma_i
 
-        Mf = self.param.m1f + self.param.m2f + self.param.m3f
+        # Mf = self.param.m1f + self.param.m2f + self.param.m3f
+        M = self.total_mass
 
-        Mh = self.param.m1h + self.param.m2h + self.param.m3h
+        jdqd = (0.002 * jdqds['jump'] + self.mass_hip * jdqds['hip'] + \
+                self.mass_thigh * jdqds['thigh'] + self.mass_calf * jdqds['calf']) / M
 
-        jdqd_h = (self.param.m1h * jdqds['b1h'] + self.param.m2h * jdqds['b2h'] + \
-                  self.param.m3h * jdqds['b3h']) / Mh
+        # Mh = self.param.m1h + self.param.m2h + self.param.m3h
 
-        jdqd_f = (self.param.m1f * jdqds['b1f'] + self.param.m2f * jdqds['b2f'] + \
-                  self.param.m3f * jdqds['b3f']) / Mf
+        # jdqd_h = (self.param.m1h * jdqds['b1h'] + self.param.m2h * jdqds['b2h'] +\
+        #           self.param.m3h * jdqds['b3h']) / Mh
 
-        return jdqd_h, jdqd_f
+        # jdqd_f = (self.param.m1f * jdqds['b1f'] + self.param.m2f * jdqds['b2f'] +\
+        #           self.param.m3f * jdqds['b3f']) / Mf
+
+        return jdqd  # jdqd_h , jdqd_f
 
     def CalcAcceleration(self, q, qdot, qddot, body_id, body_point):
         body_accel = rbdl.CalcPointAcceleration(self.model, q, qdot, qddot, \
@@ -439,7 +458,7 @@ class Centauro_RobotClass(object):
         return None
 
     def get_com(self, calc_velocity=False, calc_angular_momentum=False, \
-                update=True, index=-1, body_part='hf', q=None, qdot=None):
+                update=True, index=-1, body_part='slider', q=None, qdot=None):
         #        TODO: error for the whole body (body_part = 'hf') and calc_velocity = True
 
         com = np.zeros(3)
@@ -461,7 +480,7 @@ class Centauro_RobotClass(object):
         else:
             qqdot = self.qdot[index, :]
 
-        if body_part == 'hf':
+        if body_part == 'slider':
             rbdl.CalcCenterOfMass(self.model, qq, \
                                   qqdot, com, com_vel, angular_momentum, update)
 
@@ -480,53 +499,53 @@ class Centauro_RobotClass(object):
                 return com
 
     def __calculateBodyCOM(self, q, dq, calc_velocity, update, body_part):
-        if body_part == 'h':
-            p1 = self.CalcBodyToBase(self.body.id('b1h'),
-                                     np.array([self.param.lg1h, 0., 0.]),
+        if body_part == 'leg':
+            p1 = self.CalcBodyToBase(self.model.GetBodyId('hip'),
+                                     np.array([0.03, 0, 0.0]),
                                      update_kinematics=update,
                                      q=q, qdot=dq, calc_velocity=calc_velocity)
-            p2 = self.CalcBodyToBase(self.body.id('b2h'),
-                                     np.array([self.param.lg2h, 0., 0.]),
+            p2 = self.CalcBodyToBase(self.model.GetBodyId('thigh'),
+                                     np.array([0.0, 0.06, -0.02]),
                                      update_kinematics=update,
                                      q=q, qdot=dq, calc_velocity=calc_velocity)
-            p3 = self.CalcBodyToBase(self.body.id('b3h'),
-                                     np.array([self.param.lg3h, 0., 0.]),
-                                     update_kinematics=update,
-                                     q=q, qdot=dq, calc_velocity=calc_velocity)
-
-            if not calc_velocity:
-                com = (self.param.m1h * p1 + self.param.m2h * p2 + self.param.m3h * p3) / \
-                      (self.param.m1h + self.param.m2h + self.param.m3h)
-                vel = None
-            else:
-                com = (self.param.m1h * p1[0] + self.param.m2h * p2[0] + self.param.m3h * p3[0]) / \
-                      (self.param.m1h + self.param.m2h + self.param.m3h)
-                vel = (self.param.m1h * p1[1] + self.param.m2h * p2[1] + self.param.m3h * p3[1]) / \
-                      (self.param.m1h + self.param.m2h + self.param.m3h)
-
-        if body_part == 'f':
-            p1 = self.CalcBodyToBase(self.body.id('b1f'),
-                                     np.array([self.param.lg1f, 0., 0.]),
-                                     update_kinematics=update,
-                                     q=q, qdot=dq, calc_velocity=calc_velocity)
-            p2 = self.CalcBodyToBase(self.body.id('b2f'),
-                                     np.array([self.param.lg2f, 0., 0.]),
-                                     update_kinematics=update,
-                                     q=q, qdot=dq, calc_velocity=calc_velocity)
-            p3 = self.CalcBodyToBase(self.body.id('b3f'),
-                                     np.array([self.param.lg3f, 0., 0.]),
+            p3 = self.CalcBodyToBase(self.model.GetBodyId('calf'),
+                                     np.array([0., 0.01, (1 / 2) * self.calf_length]),
                                      update_kinematics=update,
                                      q=q, qdot=dq, calc_velocity=calc_velocity)
 
             if not calc_velocity:
-                com = (self.param.m1f * p1 + self.param.m2f * p2 + self.param.m3f * p3) / \
-                      (self.param.m1f + self.param.m2f + self.param.m3f)
+                com = (self.mass_hip * p1 + self.mass_thigh * p2 + self.mass_calf * p3) / \
+                      (self.mass_hip + self.mass_thigh + self.mass_calf)
                 vel = None
             else:
-                com = (self.param.m1f * p1[0] + self.param.m2f * p2[0] + self.param.m3f * p3[0]) / \
-                      (self.param.m1f + self.param.m2f + self.param.m3f)
-                vel = (self.param.m1f * p1[1] + self.param.m2f * p2[1] + self.param.m3f * p3[1]) / \
-                      (self.param.m1f + self.param.m2f + self.param.m3f)
+                com = (self.mass_hip * p1[0] + self.mass_thigh * p2[0] + self.mass_calf * p3[0]) / \
+                      (self.mass_hip + self.mass_thigh + self.mass_calf)
+                vel = (self.mass_hip * p1[1] + self.mass_thigh * p2[1] + self.mass_calf * p3[1]) / \
+                      (self.mass_hip + self.mass_thigh + self.mass_calf)
+
+        # if body_part == 'f':
+        #     p1 = self.CalcBodyToBase(self.body.id('b1f'),
+        #                              np.array([self.param.lg1f, 0., 0.]),
+        #                              update_kinematics = update,
+        #                              q = q, qdot = dq, calc_velocity = calc_velocity)
+        #     p2 = self.CalcBodyToBase(self.body.id('b2f'),
+        #                              np.array([self.param.lg2f, 0., 0.]),
+        #                              update_kinematics = update,
+        #                              q = q, qdot = dq, calc_velocity = calc_velocity)
+        #     p3 = self.CalcBodyToBase(self.body.id('b3f'),
+        #                              np.array([self.param.lg3f, 0., 0.]),
+        #                              update_kinematics = update,
+        #                              q = q, qdot = dq, calc_velocity = calc_velocity)
+        #
+        #     if not calc_velocity:
+        #         com = (self.param.m1f*p1 + self.param.m2f*p2 + self.param.m3f*p3)/\
+        #           (self.param.m1f + self.param.m2f + self.param.m3f)
+        #         vel = None
+        #     else:
+        #         com = (self.param.m1f*p1[0] + self.param.m2f*p2[0] + self.param.m3f*p3[0])/\
+        #           (self.param.m1f + self.param.m2f + self.param.m3f)
+        #         vel = (self.param.m1f*p1[1] + self.param.m2f*p2[1] + self.param.m3f*p3[1])/\
+        #           (self.param.m1f + self.param.m2f + self.param.m3f)
 
         return com, vel
 
@@ -553,30 +572,25 @@ class Centauro_RobotClass(object):
         bis = []
         pts = []
         ms = []
-        if body_part == 'h':
-            bis.append(self.body.id('b1h'))
-            bis.append(self.body.id('b2h'))
-            bis.append(self.body.id('b3h'))
-            pts.append(np.array([self.param.lg1h, 0., 0.]))
-            pts.append(np.array([self.param.lg2h, 0., 0.]))
-            pts.append(np.array([self.param.lg3h, 0., 0.]))
-            ms = [self.param.m1h, self.param.m2h, self.param.m3h]
+        if body_part == 'slider':
+            bis.append(self.model.GetBodyId('hip'))
+            bis.append(self.model.GetBodyId('thigh'))
+            bis.append(self.model.GetBodyId('calf'))
+            ######################## from urdf model ########################
+            pts.append(np.array([0.03, 0, 0.0]))
+            pts.append(np.array([0.0, 0.06, -0.02]))
+            pts.append(np.array([0.0, 0.0, -0.240]))
+            ms = [self.mass_hip, self.mass_thigh, self.mass_calf]
 
-        elif body_part == 'f':
-            bis.append(self.body.id('b1f'))
-            bis.append(self.body.id('b2f'))
-            bis.append(self.body.id('b3f'))
-            pts.append(np.array([self.param.lg1f, 0., 0.]))
-            pts.append(np.array([self.param.lg2f, 0., 0.]))
-            pts.append(np.array([self.param.lg3f, 0., 0.]))
-            ms = [self.param.m1f, self.param.m2f, self.param.m3f]
+        else:
+            print("body part should be slider")
 
         J = np.zeros((3, self.qdim))
 
         for i, bi in enumerate(bis):
-            J += ms[i] * self.CalcJacobian(self.model, self.q[-1, :], bi, pts[i])
+            J += ms[i] * self.CalcJacobian(self.model, self.q, bi, pts[i])
 
-        return J[:2, :] / sum(ms)
+        return J / sum(ms)
 
     def computeJacobianCOM23(self, body_part):
         J = self.computeJacobianCOM(body_part)
@@ -589,12 +603,8 @@ class Centauro_RobotClass(object):
                          calc_velocity=False, update_kinematics=True, \
                          index=-1, q=None, qdot=None):
 
-        point = np.array([self.body.l_end, 0., 0.])
-        if body_part == 'h':
-            body_id = self.body.id('b3h')
-        elif body_part == 'f':
-            body_id = self.body.id('b3f')
-
+        point = np.array([0., 0., self.calf_length])
+        if body_part == 'slider': body_id = self.model.GetBodyId('calf')
         return self.CalcBodyToBase(body_id, point, \
                                    calc_velocity=calc_velocity, \
                                    update_kinematics=update_kinematics, \
@@ -619,15 +629,15 @@ class Centauro_RobotClass(object):
         p = self.__p[-1]
         return [
             lambda t, x: None if 1 in p else self.Touchdown(t, x, 1),
-            lambda t, x: None if 2 in p else self.Touchdown(t, x, 2),
+            # lambda t, x: None if 2 in p else self.Touchdown(t, x, 2),
             #            lambda t, x: None if 3 in p else self.Touchdown(t, x, 3),
             #            lambda t, x: None if 4 in p else self.Touchdown(t, x, 4),
             lambda t, x: None if 1 not in p else self.Liftoff(t, x, 1),
-            lambda t, x: None if 2 not in p else self.Liftoff(t, x, 2),
+            # lambda t, x: None if 2 not in p else self.Liftoff(t, x, 2),
             #            lambda t, x: None if 3 not in p else self.Liftoff(t, x, 3),
             #            lambda t, x: None if 4 not in p else self.Liftoff(t, x, 4),
             lambda t, x: None if 1 not in p else self.Liftoff_GRF(t, x, 1),
-            lambda t, x: None if 2 not in p else self.Liftoff_GRF(t, x, 2),
+            # lambda t, x: None if 2 not in p else self.Liftoff_GRF(t, x, 2),
             #            lambda t, x: None if 3 not in p else self.Liftoff_GRF(t, x, 3),
             #            lambda t, x: None if 4 not in p else self.Liftoff_GRF(t, x, 4),
             lambda t, x: None if not self.StopSimulation(t, x, p) else 0]
@@ -646,18 +656,23 @@ class Centauro_RobotClass(object):
         """
         should return a positive value if leg penetrated the ground
         """
+        print("leg is in touchdown!!!!!!!!!!")
         q = x[:self.qdim]
-        point = np.array([self.body.l_end, 0., 0.])
+        point = np.array([0., 0., self.calf_length])
+        # print("leg is:",leg)
 
         if leg == 1:
-            body_id = self.body.id('b3h')
+            body_id = self.model.GetBodyId('calf')
         elif leg == 2:
-            body_id = self.body.id('b3f')
+            print("leg 2 is added !!!!!!")
 
         #        exec("body_id = self.body.id('b3"+repr(leg)+"')")
 
         pose = self.CalcBodyToBase(body_id, point, q=q)
-        return - (pose[1] - self.TerrainHeight(pose[0]))
+        print("pose:", pose)
+        print(- (pose[2] - self.TerrainHeight(0.0)))
+        ################################################################ 0.8 is slider height
+        return - (pose[2] - self.TerrainHeight(pose[0]))
 
     def Liftoff(self, t, x, leg):
         return -1
@@ -692,7 +707,7 @@ class Centauro_RobotClass(object):
         if leg == 1:
             tt = self.tt_h
         elif leg == 2:
-            tt = self.tt_f
+            print("leg 2 is added !!!!!!!")  # tt = self.tt_f
 
         if t - tt < .25 * self.slip_st_dur:
             return -1
@@ -704,7 +719,7 @@ class Centauro_RobotClass(object):
     #        elif leg == 2: return - self.Lambda[(leg - 1)*2 + 1] - 50
 
     def predictNextLiftoff(self, y, dy):
-        p = [-1 / 2 * self.param.g0, dy, y - self.slip_yt]
+        p = [-1 / 2 * self.g0, dy, y - self.slip_yt]
         ts = np.roots(p)
         print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', ts)
         return max(ts)
@@ -946,7 +961,25 @@ class Centauro_RobotClass(object):
         plt.plot(self.Lambda, '-o')
 
 
-
+# urdf_file = "/home/nooshin/minicheetah/src/first_leg/scripts/leg_RBDL.urdf"
+#
+# # initiate time array
+# t = np.array([0])
+# dt = .005 # step size
+#
+# # initiate stats with dummy values
+# q = np.zeros((1, 0)) # joint position
+# qdot = np.zeros((1, 0)) # joint velocity
+# u = np.zeros((1, 0)) # control inputs
+# # u = np.zeros(4)
+#
+#
+# p = [[ ]] # the contact feet
+# # strange behavior when contact = [[1, 2]] and the legs are upright!!!!
+#
+# # instanciate robot object:
+#
+# cr = Centauro_RobotClass(t, q, qdot, p, u, dt, urdf_file=urdf_file)
 
 
 

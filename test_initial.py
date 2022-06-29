@@ -16,7 +16,8 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-from Centauro_RobotClass import Centauro_RobotClass
+from leg_robotclass import ROBOT
+# from Centauro_RobotClass import Centauro_RobotClass
 from leg_controlclass import leg_controlclass
 from leg_tasksetclass import TaskSet
 from Utils import Anim_leg, Plot_base_coordinate, Plot_foot_tip, \
@@ -31,7 +32,6 @@ plt.close('all')
 # # generate lua model
 # write_lua(param)
 # lua_file = 'robot2d.lua'
-urdf_file = "/home/nooshin/minicheetah/src/first_leg/scripts/legRBDL.urdf"
 
 # initiate time array
 t = np.array([0])
@@ -49,14 +49,15 @@ p = [[ ]] # the contact feet
 
 # instanciate robot object:
 
-cr = Centauro_RobotClass(t, q, qdot, p, u, dt, urdf_file)
-ct = TaskSet(cr)
-cc = leg_controlclass(cr)
-cr.tt_h = 0.01
-cr.tl_h = 0.03
-cr.tt_f = 0.01
-cr.tl_f = 0.03
-cr.slip_st_dur = 0.2
+cr = ROBOT(t, dt, q=q, p=p, mode = 'slider', qdot=qdot, u= tau)
+# cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,mode='slider',param=None,terrain=None)
+# ct = TaskSet(cr)
+# cc = leg_controlclass(cr)
+cr.tt_h = 0.001
+cr.tl_h = 0.003
+cr.tt_f = 0.001
+cr.tl_f = 0.003
+cr.slip_st_dur = 0.005
 
 ######################################
 #### create initial configuration ####
