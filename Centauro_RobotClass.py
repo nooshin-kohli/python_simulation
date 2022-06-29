@@ -1,29 +1,32 @@
-
+# -*- coding: utf-8 -*-
 """
 Created on Mon Aug 29 16:31:20 2016
 
 @author: mshahbazi
 """
-import numpy as np
 import sys
 from os.path import expanduser
-# import scipy.integrate as integrate
+
 home = expanduser("~")
 dir = home + '/projects/rbdl/build/python'
 sys.path.append(dir)
 import rbdl
+import numpy as np
+# import rbdl
+
 from leg_importmodel import BodyClass3d, JointClass3d
+# import matplotlib.pyplot as plt
+# from scipy.optimize import root, approx_fprime, minimize, fminbound
+import scipy.integrate as integrate
+
+
+# import time
+# import subprocess
 
 
 class Centauro_RobotClass(object):
 
-    def __init__(self, t, q, qdot, p, u, dt, mode, param=None, terrain=None):
-        if mode =='slider':
-            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/legRBDL.urdf")
-            # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/legRBDL.urdf")
-        else:
-            self.model = rbdl.loadModel("/home/nooshin/minicheetah/src/first_leg/scripts/leg_RBDL.urdf")
-            # self.model = rbdl.loadModel("/home/kamiab/catkin_ws/src/simulation/first_leg/scripts/leg_RBDL.urdf")
+    def __init__(self, t, q, qdot, p, u, dt, urdf_file, param=None, terrain=None):
         """
         This is Centauro robot class
         """
@@ -32,10 +35,13 @@ class Centauro_RobotClass(object):
 
         self.fb_dim = 0
         self.point_F_dim = 2
-        self.body = BodyClass3d()
-        self.joint = JointClass3d()
+
+        self.model = rbdl.loadModel(urdf_file)
+        print(self.model)
+        # self.body = BodyClass3d()
+        # self.joint = JointClass3d()
         if param is None:
-            self.body.l_end = -0.240
+            self.l_end = -0.240
         else:
             self.body.l_end = self.param.l3h
 
@@ -64,23 +70,12 @@ class Centauro_RobotClass(object):
 
         self.terrain = terrain
         self.g0 = 9.81
+
         self.calf_length = -0.240
         self.hip_length = -0.93
         self.thigh_length = -0.21183
-
-
-        self.mass_hip = 0.63
-        self.mass_thigh = 1.062
-        self.mass_calf = 0.133
-
-        self.total_mass = sum([self.model.mBodies[i].mMass \
-                               for i in range(self.fb_dim, self.model.previously_added_body_id + 1)])
-
-        self.foot_pose_h = 0
-        self.foot_pose_f = 0
-
         self.Jc = self.Jc_from_cpoints( \
-            self.model, self.q[-1, :], self.body, self.__p[-1])  # TODO
+            self.model, self.q[-1, :], self.__p[-1])
 
         self.M = self.CalcM(self.model, self.q[-1, :])
         self.h = self.Calch(self.model, self.q[-1, :], self.qdot[-1, :])
@@ -92,7 +87,20 @@ class Centauro_RobotClass(object):
         #
         #        self.cforce.append(self.Lambda)
 
+        # self.calf_length = -0.240
+        # self.hip_length = -0.93
+        # self.thigh_length = -0.21183
+        # print("calf len:",self.calf_length)
 
+        self.mass_hip = 0.63
+        self.mass_thigh = 1.062
+        self.mass_calf = 0.133
+
+        self.total_mass = sum([self.model.mBodies[i].mMass \
+                               for i in range(self.fb_dim, self.model.previously_added_body_id + 1)])
+
+        self.foot_pose_h = 0
+        self.foot_pose_f = 0
 
     def __call__(self):
         """
@@ -165,7 +173,7 @@ class Centauro_RobotClass(object):
         q = qqdot[:self.qdim]
         qdot = qqdot[self.qdim:]
 
-        Jc = self.Jc_from_cpoints(self.model, q, self.body, p)
+        Jc = self.Jc_from_cpoints(self.model, q, p)
 
         M = self.CalcM(self.model, q)
 
@@ -207,13 +215,12 @@ class Centauro_RobotClass(object):
         qd = x[self.qdim:]
 
         self.M = self.CalcM(self.model, q)
-        self.Jc = self.Jc_from_cpoints(self.model, q, self.body, self.__p0)
+        self.Jc = self.Jc_from_cpoints(self.model, q, self.__p0)
         self.h = self.Calch(self.model, q, qd)
 
         self.ForwardDynamics(x, self.M, self.h, self.S, self.u0, self.Jc, self.__p0)
 
         dx = np.concatenate((qd, self.qddot.flatten()))
-        print(dx)
 
         return dx
 
@@ -342,7 +349,7 @@ class Centauro_RobotClass(object):
         rbdl.CalcPointJacobian(model, q, bodyid, point, Jc)
         return Jc
 
-    def Jc_from_cpoints(self, model, q, body, cpoints):
+    def Jc_from_cpoints(self, model, q, cpoints):
 
         Jc = np.array([])
 
@@ -357,6 +364,7 @@ class Centauro_RobotClass(object):
 
             # Jc_ = self.CalcJacobian(model, q, body.id('b3f'), ftip_pose)
             # Jc = np.append(Jc, Jc_[:2, :])
+        print(Jc)
 
         return Jc.reshape(np.size(Jc) // model.dof_count, model.dof_count)
 
@@ -961,25 +969,7 @@ class Centauro_RobotClass(object):
         plt.plot(self.Lambda, '-o')
 
 
-# urdf_file = "/home/nooshin/minicheetah/src/first_leg/scripts/leg_RBDL.urdf"
-#
-# # initiate time array
-# t = np.array([0])
-# dt = .005 # step size
-#
-# # initiate stats with dummy values
-# q = np.zeros((1, 0)) # joint position
-# qdot = np.zeros((1, 0)) # joint velocity
-# u = np.zeros((1, 0)) # control inputs
-# # u = np.zeros(4)
-#
-#
-# p = [[ ]] # the contact feet
-# # strange behavior when contact = [[1, 2]] and the legs are upright!!!!
-#
-# # instanciate robot object:
-#
-# cr = Centauro_RobotClass(t, q, qdot, p, u, dt, urdf_file=urdf_file)
+
 
 
 

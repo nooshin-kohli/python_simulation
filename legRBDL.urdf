@@ -99,7 +99,7 @@
         <child link="jump"/>
         <limit effort="20" lower="-0.7" upper="0.5" velocity="0.5"/>
         <origin rpy="0 0 0" xyz="0 0 0.9"/>
-        <dynamics damping="10" friction="0.1"/>
+        <dynamics damping="3" friction="0"/>
     </joint>
 
     <link name="jump">
@@ -213,7 +213,7 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="0.0 0.0 -0.120"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 -0.240"/>
       <mass value="0.133"/>
       <inertia ixx="0.000214698666667" ixy="0.0" ixz="0.0" iyy="0.000214698666667" iyz="0.0" izz="2.73066666667e-06"/>
     </inertial>

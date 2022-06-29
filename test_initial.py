@@ -16,8 +16,8 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-from leg_robotclass import ROBOT
-# from Centauro_RobotClass import Centauro_RobotClass
+# from leg_robotclass import ROBOT
+from Centauro_RobotClass import Centauro_RobotClass
 from leg_controlclass import leg_controlclass
 from leg_tasksetclass import TaskSet
 from Utils import Anim_leg, Plot_base_coordinate, Plot_foot_tip, \
@@ -49,8 +49,8 @@ p = [[ ]] # the contact feet
 
 # instanciate robot object:
 
-cr = ROBOT(t, dt, q=q, p=p, mode = 'slider', qdot=qdot, u= tau)
-# cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,mode='slider',param=None,terrain=None)
+# cr = ROBOT(t, dt, q=q, p=p, mode = 'slider', qdot=qdot, u= tau)
+cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
 # ct = TaskSet(cr)
 # cc = leg_controlclass(cr)
 cr.tt_h = 0.001
