@@ -36,7 +36,7 @@ class ROBOT():
             print("at this line")
         self.body = BodyClass3d()
         self.joint = JointClass3d()
-        self.g0 = -9.81
+        self.g0 = 9.81
         self.calf_length = -0.240
         self.hip_length = -0.93
         self.thigh_length = -0.21183
@@ -297,12 +297,12 @@ class ROBOT():
 #        self.ComputeContactForce(self.qqdot0forRefine, self.__p0, self.u0)
 #        self.cforce.append(self.Lambda) 
 
-        self.qqdot0 = integrate.odeint(self.__dyn, self.qqdot0[-1,:], \
-        np.array([0,self.dt]))
+        # self.qqdot0 = integrate.odeint(self.__dyn, self.qqdot0[-1,:], \
+        # np.array([0,self.dt]))
         
-        # dy = self.RK4(self.dyn_RK4)
-        # # print("dy:",dy)
-        # self.qqdot0 += dy(self.t0, self.qqdot0[-1, :], self.dt).reshape(1, self.qdim*2)
+        dy = self.RK4(self.dyn_RK4)
+        # print("dy:",dy)
+        self.qqdot0 += dy(self.t0, self.qqdot0[-1, :], self.dt).reshape(1, self.qdim*2)
         # print("self.qqdot0:",self.qqdot0)
         
 
@@ -692,7 +692,7 @@ class ROBOT():
         res_final=self.ForwardDynamics(qqdot.flatten(), M, h, self.S, u, Jc, p)
         return res_final
 
-    def SetGRF(self, p, values):                                            # TODO: what is this?
+    def SetGRF(self, p, values):
 #        print 'yes', p
         last = 0
         if 1 in p:
@@ -740,7 +740,7 @@ class ROBOT():
             Normal.append(np.array([0., 1.]))
 #            Normal.append(np.array([0., 0., 1.]))
         
-        cp = [1]
+        # cp = [1]
         k = len(cp)*self.point_F_dim
         # print("hi")
         # k = 1
@@ -765,6 +765,7 @@ class ROBOT():
         return Gamma
     
     def Liftoff_GRF(self, t, y, leg):
+        print("leg is in liftoff!!!")
         if hasattr(self, 'for_refine'): u = self.u[-1, :]
         else:
             # print("self.q:",np.concatenate((self.q, self.qdot)))
