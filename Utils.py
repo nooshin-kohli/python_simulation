@@ -12,7 +12,8 @@ dir = home + '/projects/rbdl/build/python'
 sys.path.append(dir)
 import rbdl
 import numpy as np
-from leg_robotclass import ROBOT
+#from leg_robotclass import ROBOT
+from Centauro_RobotClass import Centauro_RobotClass
 
 
 
@@ -129,6 +130,8 @@ def Anim_leg(model, body, joint, Q, time):
     ax.set_xlim([-.25, 1.5])
     ax.set_xlabel('X')
     # set this to equal for 2d fig
+    #ax.set_box_aspect([1,1,1])
+    
     ax.axis('auto') 
     ax.set_ylim([0, 1.5])
     
@@ -229,9 +232,9 @@ def Plot_contact_force(cr):
         for i in range(len(cr.t) - 1):
             if leg in p[i]:
                 f = cr.cforce[i]
-                f = f[leg*2 - 2:leg*2]
+                f = f[leg*2 - 2:leg*3]
                 
-            else: f = np.ones(2)*np.nan
+            else: f = np.ones(3)*np.nan
                 
             force.append(f)
         

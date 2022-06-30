@@ -126,6 +126,7 @@ while cr.t[-1][0]<=Time_end:
 #print toc
 #print(cr.q)
 robot_anim = Anim_leg(cr.model, cr.body, cr.joint, cr.q, cr.t)
+Plot_contact_force(cr)
 #x_des = np.zeros(3)
 
 #qddot_des = cp.qddot_from_xbase_no_hierarchi(x_des = x_des)

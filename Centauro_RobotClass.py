@@ -260,12 +260,6 @@ class Centauro_RobotClass(object):
             aux1 = np.hstack((M, -Jc.T))
             aux2 = np.hstack((Jc, np.zeros((fdim, fdim))))
             A = np.vstack((aux1, aux2))
-            if 1 in self.getContactFeet():
-                print("after contact")
-                print(np.shape(tau))
-            else:
-                print("before contact")
-                print(np.shape(tau))
 
             B = np.vstack(((np.dot(S.T, tau) - h).reshape(qdim, 1), \
                            gamma.reshape(self.point_F_dim, 1)))
