@@ -219,36 +219,36 @@
     </inertial>
   </link>
   <!-- //////////////////////foot//////////////////// -->
-  <joint name="foot_fixed" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 -0.240"/>
-<!--    <origin rpy="0 0 0" xyz="0 0.01 -0.1881"/>-->
-    <parent link="calf"/>
-    <child link="foot"/>
-    <axis xyz="0 1 0"/>
-    <dynamics damping="0.1" friction="0.1"/>
-    <limit effort="20" lower="-3.14159265359" upper="3.14159265359" velocity="10.6"/>
-  </joint>
+<!--  <joint name="foot_fixed" type="fixed">-->
+<!--    <origin rpy="0 0 0" xyz="0 0 -0.240"/>-->
+<!--&lt;!&ndash;    <origin rpy="0 0 0" xyz="0 0.01 -0.1881"/>&ndash;&gt;-->
+<!--    <parent link="calf"/>-->
+<!--    <child link="foot"/>-->
+<!--    <axis xyz="0 1 0"/>-->
+<!--    <dynamics damping="0.1" friction="0.1"/>-->
+<!--    <limit effort="20" lower="-3.14159265359" upper="3.14159265359" velocity="10.6"/>-->
+<!--  </joint>-->
 
-  <link name="foot">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0.002 0"/>
-      <geometry>
-        <sphere radius="0.025"/>
-      </geometry>
-      <material name="white_black"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0.002 0"/>
-      <geometry>
-        <sphere radius="0.025"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <origin rpy="0 0 0" xyz="0 0.002 0"/>
-      <mass value="0.005"/>
-      <inertia ixx="4.2135e-05" ixy="0.0" ixz="0.0" iyy="4.2135e-05" iyz="0.0" izz="4.2135e-05"/>
-    </inertial>
-  </link>
+<!--  <link name="foot">-->
+<!--    <visual>-->
+<!--      <origin rpy="0 0 0" xyz="0 0.002 0"/>-->
+<!--      <geometry>-->
+<!--        <sphere radius="0.025"/>-->
+<!--      </geometry>-->
+<!--      <material name="white_black"/>-->
+<!--    </visual>-->
+<!--    <collision>-->
+<!--      <origin rpy="0 0 0" xyz="0 0.002 0"/>-->
+<!--      <geometry>-->
+<!--        <sphere radius="0.025"/>-->
+<!--      </geometry>-->
+<!--    </collision>-->
+<!--    <inertial>-->
+<!--      <origin rpy="0 0 0" xyz="0 0.002 0"/>-->
+<!--      <mass value="0.005"/>-->
+<!--      <inertia ixx="4.2135e-05" ixy="0.0" ixz="0.0" iyy="4.2135e-05" iyz="0.0" izz="4.2135e-05"/>-->
+<!--    </inertial>-->
+<!--  </link>-->
 
 
   <!--/////////////// transmission tags ////////////////////// -->

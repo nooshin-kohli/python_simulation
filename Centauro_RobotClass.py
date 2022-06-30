@@ -34,12 +34,12 @@ class Centauro_RobotClass(object):
         self.param = param
 
         self.fb_dim = 0
-        self.point_F_dim = 2
+        self.point_F_dim = 3
 
         self.model = rbdl.loadModel(urdf_file)
-        print(self.model)
-        # self.body = BodyClass3d()
-        # self.joint = JointClass3d()
+#        print(self.model)
+        self.body = BodyClass3d()
+        self.joint = JointClass3d()
         if param is None:
             self.l_end = -0.240
         else:
@@ -48,6 +48,7 @@ class Centauro_RobotClass(object):
         self.qdim = self.model.q_size
         self.S = np.hstack((np.zeros((self.qdim - self.fb_dim, self.fb_dim)), \
                             np.eye(self.qdim - self.fb_dim)))
+        self.S = np.array([[0,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
 
         self.t = np.array([t])
 
@@ -77,9 +78,11 @@ class Centauro_RobotClass(object):
         self.Jc = self.Jc_from_cpoints( \
             self.model, self.q[-1, :], self.__p[-1])
 
-        self.M = self.CalcM(self.model, self.q[-1, :])
-        self.h = self.Calch(self.model, self.q[-1, :], self.qdot[-1, :])
 
+        self.M = self.CalcM(self.model, self.q[-1, :])
+
+        self.h = self.Calch(self.model, self.q[-1, :], self.qdot[-1, :])
+#        print("h is:", self.h)
         #        self.qqdot0 = np.concatenate((self.q[-1,:], self.qdot[-1, :]))
         #        print self.qqdot0.shape
         #        self.ForwardDynamics(self.qqdot0, self.M, self.h, self.S, \
@@ -96,11 +99,12 @@ class Centauro_RobotClass(object):
         self.mass_thigh = 1.062
         self.mass_calf = 0.133
 
-        self.total_mass = sum([self.model.mBodies[i].mMass \
-                               for i in range(self.fb_dim, self.model.previously_added_body_id + 1)])
+        self.total_mass = self.mass_hip + self.mass_thigh + self.mass_calf
+#        print("total :")
 
         self.foot_pose_h = 0
         self.foot_pose_f = 0
+
 
     def __call__(self):
         """
@@ -232,7 +236,7 @@ class Centauro_RobotClass(object):
 
     def ForwardDynamics(self, x, M, h, S, tau, Jc, cpoints):
         fdim = np.shape(Jc)[0]
-        print("fdim: ", fdim)
+#        print("fdim: ", fdim)
         qdim = self.qdim
         q = x[:qdim]
         qdot = x[qdim:]
@@ -242,7 +246,7 @@ class Centauro_RobotClass(object):
             self.qddot = np.dot(np.linalg.inv(M), np.dot(S.T, self.u0) - h).flatten()
             self.Lambda = np.zeros(fdim) * np.nan
         else:
-
+#            print ("qdot inside FD: ", Jc.any())
             if np.nonzero(qdot)[0].any() and Jc.any():
                 #                tic = time.time()
                 #                gamma = self.CalcGamma(cpoints, q, qdot)
@@ -256,9 +260,15 @@ class Centauro_RobotClass(object):
             aux1 = np.hstack((M, -Jc.T))
             aux2 = np.hstack((Jc, np.zeros((fdim, fdim))))
             A = np.vstack((aux1, aux2))
+            if 1 in self.getContactFeet():
+                print("after contact")
+                print(np.shape(tau))
+            else:
+                print("before contact")
+                print(np.shape(tau))
 
             B = np.vstack(((np.dot(S.T, tau) - h).reshape(qdim, 1), \
-                           gamma.reshape(fdim, 1)))
+                           gamma.reshape(self.point_F_dim, 1)))
 
             res = np.dot(np.linalg.inv(A), B).flatten()
 
@@ -290,9 +300,9 @@ class Centauro_RobotClass(object):
         self.Lambda = np.zeros(2 * self.point_F_dim) * np.nan
         if 1 in p:
             self.Lambda[:self.point_F_dim] = values[p_1:p_1 + self.point_F_dim]
-        if 2 in p:
-            self.Lambda[self.point_F_dim:2 * self.point_F_dim] = \
-                values[p_2:p_2 + self.point_F_dim]
+#        if 2 in p:
+#            self.Lambda[self.point_F_dim:2 * self.point_F_dim] = \
+#                values[p_2:p_2 + self.point_F_dim]
         #        if 3 in p:
         #            self.Lambda[6:9] = values[p_3:p_3+3]
         #        if 4 in p:
@@ -357,19 +367,19 @@ class Centauro_RobotClass(object):
 
         if 1 in cpoints:
             Jc_ = self.CalcJacobian(model, q, model.GetBodyId('calf'), ftip_pose)
-            Jc = np.append(Jc, Jc_[:2, :])
+            Jc = np.append(Jc, Jc_[:self.point_F_dim, :])
 
         if 2 in cpoints:
             print("second leg does not exist")
 
             # Jc_ = self.CalcJacobian(model, q, body.id('b3f'), ftip_pose)
             # Jc = np.append(Jc, Jc_[:2, :])
-        print(Jc)
+#        print(Jc)
 
         return Jc.reshape(np.size(Jc) // model.dof_count, model.dof_count)
 
     def CalcGamma(self, cp, q, qdot):
-
+        
         self.cbody_id = []
 
         if 1 in cp:
@@ -386,9 +396,9 @@ class Centauro_RobotClass(object):
 
         Normal = []
         for i in range(len(cp)):
-            Normal.append(np.array([1., 0.]))
-            Normal.append(np.array([0., 1.]))
-        #            Normal.append(np.array([0., 0., 1.]))
+            Normal.append(np.array([1., 0., 0.]))
+            Normal.append(np.array([0., 1., 0.]))
+            Normal.append(np.array([0., 0., 1.]))
 
         k = len(cp) * self.point_F_dim
 
@@ -403,10 +413,14 @@ class Centauro_RobotClass(object):
             if prev_body_id != self.cbody_id[i]:
                 gamma_i = rbdl.CalcPointAcceleration(self.model, q, \
                                                      qdot, np.zeros(self.qdim), self.cbody_id[i], \
-                                                     np.array([0., 0., self.calf_length]))[:2]
+                                                     np.array([0., 0., self.calf_length]))
+#                print ("q: ", q)
+#                print ("qdot: ", qdot)
+#                 print ("gamma_i", gamma_i)
                 prev_body_id = self.cbody_id[i]
             # print("gamma_i: ", gamma_i)
             Gamma[i] = - np.dot(Normal[i], gamma_i)
+#            print ("gamma: ", Gamma[i])
         # print("Gamma:",Gamma)
         return Gamma
 
@@ -429,7 +443,7 @@ class Centauro_RobotClass(object):
 
                 gamma_i = rbdl.CalcPointAcceleration(self.model, self.q[-1], \
                                                      self.qdot[-1], np.zeros(self.qdim), self.model.GetBodyId(body), \
-                                                     point_position)[:2]
+                                                     point_position)
                 jdqds[body] = gamma_i
 
         # Mf = self.param.m1f + self.param.m2f + self.param.m3f
@@ -507,7 +521,7 @@ class Centauro_RobotClass(object):
                 return com
 
     def __calculateBodyCOM(self, q, dq, calc_velocity, update, body_part):
-        if body_part == 'leg':
+        if body_part == 'h':
             p1 = self.CalcBodyToBase(self.model.GetBodyId('hip'),
                                      np.array([0.03, 0, 0.0]),
                                      update_kinematics=update,
@@ -612,7 +626,7 @@ class Centauro_RobotClass(object):
                          index=-1, q=None, qdot=None):
 
         point = np.array([0., 0., self.calf_length])
-        if body_part == 'slider': body_id = self.model.GetBodyId('calf')
+        if body_part == 'h': body_id = self.model.GetBodyId('calf')
         return self.CalcBodyToBase(body_id, point, \
                                    calc_velocity=calc_velocity, \
                                    update_kinematics=update_kinematics, \
@@ -664,7 +678,7 @@ class Centauro_RobotClass(object):
         """
         should return a positive value if leg penetrated the ground
         """
-        print("leg is in touchdown!!!!!!!!!!")
+#        print("leg is in touchdown!!!!!!!!!!")
         q = x[:self.qdim]
         point = np.array([0., 0., self.calf_length])
         # print("leg is:",leg)
@@ -677,8 +691,8 @@ class Centauro_RobotClass(object):
         #        exec("body_id = self.body.id('b3"+repr(leg)+"')")
 
         pose = self.CalcBodyToBase(body_id, point, q=q)
-        print("pose:", pose)
-        print(- (pose[2] - self.TerrainHeight(0.0)))
+#        print("pose:", pose)
+#        print(- (pose[2] - self.TerrainHeight(0.0)))
         ################################################################ 0.8 is slider height
         return - (pose[2] - self.TerrainHeight(pose[0]))
 
@@ -866,7 +880,9 @@ class Centauro_RobotClass(object):
 
         if self.ev_i == 0:  # touchdown of hind leg
             p0.append(1)
+#            print (" qdot just before impact: ", qdot)
             qdot = self.UpdateQdotCollision(q, qdot, p0)
+#            print ("qdot just after impact: ", qdot)
             self.tt_h = self.trefined
             self.foot_pose_h = self.computeFootState('h', q=q)[0]
             self.xt_h = self.get_com(body_part='h', q=q)
@@ -905,7 +921,7 @@ class Centauro_RobotClass(object):
         return qqdot0_new, p0
 
     def UpdateQdotCollision(self, q, qdot, p0, W=None):
-        J = self.Jc_from_cpoints(self.model, q, self.body, p0)
+        J = self.Jc_from_cpoints(self.model, q, p0)
         if W is None: W = self.CalcM(self.model, q)
         invW = np.linalg.inv(W)
         aux1 = np.dot(invW, J.T)

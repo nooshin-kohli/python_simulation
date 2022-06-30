@@ -44,6 +44,7 @@ qdot = np.zeros((1, 0)) # joint velocity
 tau = np.zeros(4)
 
 
+
 p = [[ ]] # the contact feet
 # strange behavior when contact = [[1, 2]] and the legs are upright!!!!
 
@@ -53,11 +54,14 @@ p = [[ ]] # the contact feet
 cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
 # ct = TaskSet(cr)
 # cc = leg_controlclass(cr)
-cr.tt_h = 0.001
-cr.tl_h = 0.003
-cr.tt_f = 0.001
-cr.tl_f = 0.003
-cr.slip_st_dur = 0.005
+cr.tt_h = 0.1 #TODO
+cr.tl_h = 0.3 #TODO
+cr.tt_f = 0.1 #TODO
+cr.tl_f = 0.3 #TODO
+cr.slip_st_dur = 0.5 #TODO
+
+#tau[1]  = 1
+#tau[3] = .01
 
 ######################################
 #### create initial configuration ####
@@ -67,31 +71,60 @@ angle1 = np.deg2rad(20)
 angle2 = np.deg2rad(100)
 angle3 = np.deg2rad(80)
 # cr.q[-1,0] = -0.2
-# cr.q[-1,3] = 0
+# cr.q[-1,3] = .05
 # cr.qdot[-1,0] = -0.2
 
 Time_end = 0.4
-
 # tau[0,0] = 0
 # tau[2] = 40
+def pidctrl(q, qdot, p, d):
+    q_des = [100000, 0, -0.1, -0.5]
+    qdot_des = [0, 0, 0, 0]
+    Kp = [[p,0,0,0],
+          [0,p,0,0],
+          [0,0,p,0],
+          [0,0,0,p]]
+    Kd = [[d,0,0,0],
+          [0,d,0,0],
+          [0,0,d,0],
+          [0,0,0,d]]
+    tau = np.dot((q_des-q),Kp).flatten() #+ np.dot((qdot_des-qdot),Kd)
+    # tau.reshape(4,1)
+    # tau.flatten()
+    # print("tau shape in PID:", np.shape(tau))
+    return tau
 
-
+stopflag = False
 while cr.t[-1][0]<=Time_end:
     # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
     cr.set_input(tau)
-    # print("cr.u:",cr.u)
-    # print("cr u0")
-    # print(cr.u0)
-
-    # ct.CheckContactFeet()
+    if 1 in cr.getContactFeet():
+        stopflag = True
+        tau = pidctrl(cr.q[-1: ], cr.qdot[-1,:],10,1)
+        # print(np.shape(cr.S))
+        # print(np.shape(tau))
+        # print(np.shape(cr.h))
+        # tau.reshape((4,1))
+        # print(np.shape(tau))
     cr()
+    # if stopflag:
+    #     print("after PID")
+    #     print(tau)
+    #     break
+   
+#    print ("Contact foot", cr.getContactFeet())
     
-                                        
+
+
+
+
+
+                                            
 
 #toc = time.time() - tic
 
 #print toc
-print(cr.q)
+#print(cr.q)
 robot_anim = Anim_leg(cr.model, cr.body, cr.joint, cr.q, cr.t)
 #x_des = np.zeros(3)
 
