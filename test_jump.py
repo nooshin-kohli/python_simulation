@@ -98,7 +98,7 @@ cr.q[-1,3] = -.3     #calf
 
 
 
-Time_end = 0.8
+Time_end = 0.535
 
 def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
@@ -177,6 +177,7 @@ while cr.t[-1][0]<=Time_end:
         tau = contact(slider_h, cr.Jc, intp_gf(TAU), intp_y(TAU))
         cr.tt_h = t_td #TODO
         cr.tl_h = t_lo #TODO
+        cr.slip_st_dur = 0.5
         
         # print(np.shape(cr.S))
         # print(np.shape(tau))
