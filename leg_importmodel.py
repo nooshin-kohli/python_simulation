@@ -1,5 +1,6 @@
 '''
-Nooshin Kohli
+
+@author: Nooshin Kohli
 '''
 
 class BodyClass3d(object):

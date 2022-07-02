@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+Created on Sat Jul 2 20:42:48 2022
 
+@author: Nooshin Kohli
 """
 
 import numpy as np
