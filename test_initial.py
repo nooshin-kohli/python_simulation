@@ -54,10 +54,10 @@ p = [[ ]] # the contact feet
 cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
 # ct = TaskSet(cr)
 # cc = leg_controlclass(cr)
-cr.tt_h = 0.1 #TODO
-cr.tl_h = 0.3 #TODO
-cr.tt_f = 0.1 #TODO
-cr.tl_f = 0.3 #TODO
+#cr.tt_h = 0.1 #TODO
+#cr.tl_h = 0.3 #TODO
+#cr.tt_f = 0.1 #TODO
+#cr.tl_f = 0.3 #TODO
 cr.slip_st_dur = 0.5 #TODO
 
 #tau[1]  = 1
@@ -70,7 +70,9 @@ cr.slip_st_dur = 0.5 #TODO
 angle1 = np.deg2rad(20)
 angle2 = np.deg2rad(100)
 angle3 = np.deg2rad(80)
-# cr.q[-1,0] = -0.2
+#cr.q[-1,3] = -0.1
+#cr.q[-1,0] = 0.9 
+
 # cr.q[-1,3] = .05
 # cr.qdot[-1,0] = -0.2
 
@@ -98,9 +100,11 @@ stopflag = False
 while cr.t[-1][0]<=Time_end:
     # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
     cr.set_input(tau)
+    print(cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.])))
     if 1 in cr.getContactFeet():
         stopflag = True
-        tau = pidctrl(cr.q[-1: ], cr.qdot[-1,:],10,1)
+#        print(cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.])))
+        #tau = pidctrl(cr.q[-1: ], cr.qdot[-1,:],10,1)
         # print(np.shape(cr.S))
         # print(np.shape(tau))
         # print(np.shape(cr.h))
