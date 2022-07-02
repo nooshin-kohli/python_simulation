@@ -685,7 +685,7 @@ class Centauro_RobotClass(object):
         #        exec("body_id = self.body.id('b3"+repr(leg)+"')")
 
         pose = self.CalcBodyToBase(body_id, point, q=q)
-#        print("pose:", pose)
+        print("pose:", pose)
 #        print(- (pose[2] - self.TerrainHeight(0.0)))
         ################################################################ 0.8 is slider height
         return - (pose[2] - self.TerrainHeight(pose[0]))
@@ -896,7 +896,7 @@ class Centauro_RobotClass(object):
             self.foot_pose_f = self.computeFootState('f', q=q)[0]
             self.xt_f = self.get_com(body_part='f', q=q)
 
-        elif self.ev_i == 4 and 1 in p0:  # liftoff of hind leg
+        elif self.ev_i == 2 and 1 in p0:  # liftoff of hind leg
             p0.remove(1)
             self.tl_h = self.trefined
             self.xl_h, self.dxl_h = \

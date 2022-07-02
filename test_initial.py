@@ -51,7 +51,7 @@ p = [[ ]] # the contact feet
 # instanciate robot object:
 
 # cr = ROBOT(t, dt, q=q, p=p, mode = 'slider', qdot=qdot, u= tau)
-cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
+cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/kamiab/simulation-python-quadruped/python_simulation/legRBDL.urdf',param=None,terrain=None)
 # ct = TaskSet(cr)
 # cc = leg_controlclass(cr)
 #cr.tt_h = 0.1 #TODO
