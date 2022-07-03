@@ -6,8 +6,14 @@ Created on Sat Jul 2 20:42:48 2022
 from __future__ import division
 from pickle import NONE
 
+import sys
+
+#sys.path.append('/home/mshahbazi/RBDL/build/python/')
+# sys.path.append('/home/zahra/rbdl-dev/build/python')
+
 
 import numpy as np
+import time
 import matplotlib.pyplot as plt
 from scipy import linspace
 
@@ -96,14 +102,14 @@ leg.q[-1,3] = -.3     #calf
 
 
 
-Time_end = 0.8
+Time_end = 0.6
 
 def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
     return TAU
 
-def pose (q,qdot,p=10):
-    q_des = [100000, 0.0231, 0.1, -0.3]
+def pose (q,qdot,p=0.5):
+    q_des = [0, 0.0231, 0.1, -0.3]
 #    qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],
@@ -114,13 +120,10 @@ def pose (q,qdot,p=10):
     #       [0,0,d,0],
     #       [0,0,0,d]]
     tau = np.dot((q_des-q),Kp).flatten() #+ np.dot((qdot_des-qdot),Kd)
+    # tau.reshape(4,1)
+    # tau.flatten()
+    # print("tau shape in PID:", np.shape(tau))
     return tau
-
-
-
-
-
-
 
 
 def contact (slider_h, jc, GF, y_d):        #slider_h, jc, GF, y_d
@@ -160,28 +163,46 @@ while leg.t[-1][0]<=Time_end:
             t_td = leg.t[-1][0]
             t_lo = t_td+len(GF_contact)*.01
             first_check=1
-            
-        
-
-
         stopflag = True
         slider_h = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))
         TAU = compute_TAU(leg.t[-1][0], t_td, t_lo)
-        print("jacooooooooooooob",leg.Jc)
+#        print("jacooooooooooooob",leg.Jc)
 
         tau = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU))
+        tau[0] = 0
+        print("tau at the contact: ", tau)
         leg.tt_h = t_td #TODO
         leg.tl_h = t_lo #TODO
+        leg.slip_st_dur = leg.tl_h-leg.tt_h
         
+        # print(np.shape(cr.S))
+        # print(np.shape(tau))
+        # print(np.shape(cr.h))
+        # tau.reshape((4,1))
+        # print(np.shape(tau))
     else:
         tau = pose (leg.q[-1,:],leg.qdot[-1,:])
+        tau[0] = 0
+        print("tau at the pose: ", tau)
     leg()
     # if stopflag:
     #     print("after PID")
     #     print(tau)
     #     break
+   
+#    print ("Contact foot", cr.getContactFeet())
     
 
+
+
+
+
+                                            
+
+#toc = time.time() - tic
+
+#print toc
+#print(cr.q)
 robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
 Plot_contact_force(leg)
 #x_des = np.zeros(3)

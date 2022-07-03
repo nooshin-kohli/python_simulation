@@ -130,6 +130,7 @@ class leg_robotclass(object):
         self.evt = list(self.__evts())
         self.ev = np.array([self.evt[i](self.t0 + self.dt, \
                                         self.qqdot0[-1, :]) for i in range(len(self.evt))])
+#        print("events: ", self.ev)
 
         if self.ev[-1] == 0: raise ValueError('Simulation was terminated because:\
         one of the conditions in StopSimulation() is meet.')
@@ -681,7 +682,7 @@ class leg_robotclass(object):
         #        exec("body_id = self.body.id('b3"+repr(leg)+"')")
 
         pose = self.CalcBodyToBase(body_id, point, q=q)
-        print("pose:", pose)
+#        print("pose:", pose)
 #        print(- (pose[2] - self.TerrainHeight(0.0)))
         ################################################################ 0.8 is slider height
         return - (pose[2] - self.TerrainHeight(pose[0]))
@@ -734,9 +735,9 @@ class leg_robotclass(object):
         else:
             return - self.Lambda[(leg - 1) * 2 + 1]
 
-    #        if leg == 1: return t - self.tt_h - self.slip_st_dur
-    #        elif leg == 2: return t - self.tt_f - self.slip_st_dur
-    #        elif leg == 2: return - self.Lambda[(leg - 1)*2 + 1] - 50
+#            if leg == 1: return t - self.tt_h - self.slip_st_dur
+#            elif leg == 2: return t - self.tt_f - self.slip_st_dur
+#            elif leg == 2: return - self.Lambda[(leg - 1)*2 + 1] - 50
 
     def predictNextLiftoff(self, y, dy):
         p = [-1 / 2 * self.g0, dy, y - self.slip_yt]
@@ -892,11 +893,12 @@ class leg_robotclass(object):
             self.foot_pose_f = self.computeFootState('f', q=q)[0]
             self.xt_f = self.get_com(body_part='f', q=q)
 
-        elif self.ev_i == 4 and 1 in p0:  # liftoff of hind leg
+        elif self.ev_i == 2 and 1 in p0:  # liftoff of hind leg
+#            print("I AM in Line 897")
             p0.remove(1)
             self.tl_h = self.trefined
-            self.xl_h, self.dxl_h = \
-                self.get_com(body_part='h', q=q, calc_velocity=True)
+#            self.xl_h, self.dxl_h = \
+#                self.get_com(body_part='h', q=q, calc_velocity=True)
             self.ql = self.q[-1]
             # TODO: should be leg specific?
         #            self.slip_sw_dur = \

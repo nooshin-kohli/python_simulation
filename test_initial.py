@@ -43,7 +43,7 @@ leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/
 #cr.tl_h = 0.3 #TODO
 #cr.tt_f = 0.1 #TODO
 #cr.tl_f = 0.3 #TODO
-leg.slip_st_dur = 0.5 #TODO
+leg.slip_st_dur = 0.8 #TODO
 
 #tau[1]  = 1
 #tau[3] = .01
@@ -55,18 +55,18 @@ leg.slip_st_dur = 0.5 #TODO
 angle1 = np.deg2rad(20)
 angle2 = np.deg2rad(100)
 angle3 = np.deg2rad(80)
-#cr.q[-1,3] = -0.1
+leg.q[-1,3] = -0.1
 #cr.q[-1,0] = 0.9 
 
 # cr.q[-1,3] = .05
 # cr.qdot[-1,0] = -0.2
 
-Time_end = 0.4
+Time_end = 1.5
 # tau[0,0] = 0
 # tau[2] = 40
 def pidctrl(q, qdot, p, d):
-    q_des = [100000, 0, 0, 0]
-#    qdot_des = [0, 0, 0, 0]
+    q_des = [0, 0, 0, -0.2]
+    qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],
           [0,0,p,0],
@@ -75,7 +75,7 @@ def pidctrl(q, qdot, p, d):
           [0,d,0,0],
           [0,0,d,0],
           [0,0,0,d]]
-    tau = np.dot((q_des-q),Kp).flatten() #+ np.dot((qdot_des-qdot),Kd)
+    tau = (np.dot((q_des-q),Kp) + np.dot((qdot_des-qdot),Kd)).flatten()
     # tau.reshape(4,1)
     # tau.flatten()
     # print("tau shape in PID:", np.shape(tau))
@@ -85,25 +85,33 @@ stopflag = False
 while leg.t[-1][0]<=Time_end:
     # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
     leg.set_input(tau)
+#    print("leg.q: ", leg.q)
+#    print("jc ", leg.Jc)
 #    print(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.])))
+#    print("leg: ", leg.getContactFeet())
+#    print("cpoint:",leg.)
     if 1 in leg.getContactFeet():
-        stopflag = True
+        
 #        print(cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.])))
-        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],10,1)
+        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],4.5,0.2)
+#        print("tau:", tau)
+        
+        stopflag = True
         # print(np.shape(cr.S))
         # print(np.shape(tau))
         # print(np.shape(cr.h))
         # tau.reshape((4,1))
         # print(np.shape(tau))
-    leg()
-    # if stopflag:
-    #     print("after PID")
-    #     print(tau)
+    
+#    if stopflag:
+#        print("after PID")
+#        print(tau)
     #     break
+    leg()
    
 #    print ("Contact foot", cr.getContactFeet())
     
-
+print(leg.q)
 robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
 Plot_contact_force(leg)
 
