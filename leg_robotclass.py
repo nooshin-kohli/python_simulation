@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug 29 16:31:20 2016
+Created on Sat Jul 2 20:42:48 2022
 
-@author: mshahbazi
+@author: Nooshin Kohli
 """
 import sys
 from os.path import expanduser
@@ -20,10 +20,6 @@ from leg_importmodel import BodyClass3d, JointClass3d
 import scipy.integrate as integrate
 
 
-# import time
-# import subprocess
-
-
 class leg_robotclass(object):
 
     def __init__(self, t, q, qdot, p, u, dt, urdf_file, param=None, terrain=None):
@@ -37,16 +33,15 @@ class leg_robotclass(object):
         self.point_F_dim = 3
 
         self.model = rbdl.loadModel(urdf_file)
+#        print(self.model)
         self.body = BodyClass3d()
         self.joint = JointClass3d()
-        
         if param is None:
             self.l_end = -0.240
         else:
             self.body.l_end = self.param.l3h
 
         self.qdim = self.model.q_size
-        #TODO: self.S is hard code
         self.S = np.hstack((np.zeros((self.qdim - self.fb_dim, self.fb_dim)), \
                             np.eye(self.qdim - self.fb_dim)))
         self.S = np.array([[0,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
@@ -135,6 +130,7 @@ class leg_robotclass(object):
         self.evt = list(self.__evts())
         self.ev = np.array([self.evt[i](self.t0 + self.dt, \
                                         self.qqdot0[-1, :]) for i in range(len(self.evt))])
+#        print("events: ", self.ev)
 
         if self.ev[-1] == 0: raise ValueError('Simulation was terminated because:\
         one of the conditions in StopSimulation() is meet.')
@@ -420,21 +416,21 @@ class leg_robotclass(object):
         return Gamma
 
     def CalcJgdotQdot(self):
+        # actual_bodies = ['b1h','b2h','b3h','b1f','b2f','b3f']
         actual_bodies = ['jump', 'hip', 'thigh', 'calf']
         jdqds = dict()
-        
-        ##################################### position of center of mass is extracted from urdf file 
 
         for body in self.body.bodies:
             if body in actual_bodies:
                 if body == 'jump':
-                    point_position = np.array([0.03, 0, 0.0])
+                    pos = (1 / 2) * self.hip_length
                 elif body == 'hip':
-                    point_position = np.array([0.03, 0, 0.0])
+                    pos = (1 / 2) * self.hip_length
                 elif body == 'thigh':
-                    point_position = np.array([0.0, 0.06, -0.02])
+                    pos = (1 / 2) * self.thigh_length
                 elif body == 'calf':
-                    point_position = np.array([0., 0.01, (1 / 2) * self.calf_length])
+                    pos = (1 / 2) * self.calf_length
+                point_position = np.array([0., 0., pos])
 
                 gamma_i = rbdl.CalcPointAcceleration(self.model, self.q[-1], \
                                                      self.qdot[-1], np.zeros(self.qdim), self.model.GetBodyId(body), \
@@ -711,6 +707,14 @@ class leg_robotclass(object):
     #        return -1
 
     def Liftoff_GRF(self, t, y, leg):
+#        if hasattr(self, 'for_refine'): u = self.u[-1, :]
+#        else:
+#            yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
+#            if np.allclose(y, yprev): u = self.u[-1, :]
+#            else: u = self.u0 
+##        index = self.__p0.index(leg)
+#        self.ComputeContactForce(y, self.__p0, u)
+#        return - self.Lambda[(leg - 1)*3 + 2]
         if hasattr(self, 'for_refine'):
             u = self.u[-1, :]
         else:
@@ -731,9 +735,9 @@ class leg_robotclass(object):
         else:
             return - self.Lambda[(leg - 1) * 2 + 1]
 
-    #        if leg == 1: return t - self.tt_h - self.slip_st_dur
-    #        elif leg == 2: return t - self.tt_f - self.slip_st_dur
-    #        elif leg == 2: return - self.Lambda[(leg - 1)*2 + 1] - 50
+#            if leg == 1: return t - self.tt_h - self.slip_st_dur
+#            elif leg == 2: return t - self.tt_f - self.slip_st_dur
+#            elif leg == 2: return - self.Lambda[(leg - 1)*2 + 1] - 50
 
     def predictNextLiftoff(self, y, dy):
         p = [-1 / 2 * self.g0, dy, y - self.slip_yt]
@@ -889,11 +893,12 @@ class leg_robotclass(object):
             self.foot_pose_f = self.computeFootState('f', q=q)[0]
             self.xt_f = self.get_com(body_part='f', q=q)
 
-        elif self.ev_i == 4 and 1 in p0:  # liftoff of hind leg
+        elif self.ev_i == 2 and 1 in p0:  # liftoff of hind leg
+#            print("I AM in Line 897")
             p0.remove(1)
             self.tl_h = self.trefined
-            self.xl_h, self.dxl_h = \
-                self.get_com(body_part='h', q=q, calc_velocity=True)
+#            self.xl_h, self.dxl_h = \
+#                self.get_com(body_part='h', q=q, calc_velocity=True)
             self.ql = self.q[-1]
             # TODO: should be leg specific?
         #            self.slip_sw_dur = \

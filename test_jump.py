@@ -1,4 +1,8 @@
+"""
+Created on Sat Jul 2 20:42:48 2022
 
+@author: Kamiab yazdi & Nooshin Kohli
+"""
 from __future__ import division
 from pickle import NONE
 
@@ -13,8 +17,8 @@ import time
 import matplotlib.pyplot as plt
 from scipy import linspace
 
-# from leg_robotclass import ROBOT
-from Centauro_RobotClass import Centauro_RobotClass
+from leg_robotclass import leg_robotclass
+#from Centauro_RobotClass import Centauro_RobotClass
 from scipy.interpolate import InterpolatedUnivariateSpline as intp
 from leg_controlclass import leg_controlclass
 from leg_tasksetclass import TaskSet
@@ -79,21 +83,21 @@ tau = np.zeros(4)
 p = [[ ]] # the contact feet
 
 
-cr = Centauro_RobotClass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/kamiab/simulation-python-quadruped/python_simulation/legRBDL.urdf',param=None,terrain=None)
+leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
 
 # cr.tt_h = 0.1 #TODO
 # cr.tl_h = 0.3 #TODO
 # cr.tt_f = 0.1 #TODO
 # cr.tl_f = 0.3 #TODO
-cr.slip_st_dur = 0.5 #TODO
+leg.slip_st_dur = 0.5 #TODO
 
 
 
 ############################################Homing initialize
-cr.q[-1,0] = 0.0     #slide
-cr.q[-1,1] = 0.0231  #hip
-cr.q[-1,2] = 0.1     #thigh
-cr.q[-1,3] = -.3     #calf
+leg.q[-1,0] = 0.0     #slide
+leg.q[-1,1] = 0.0231  #hip
+leg.q[-1,2] = 0.1     #thigh
+leg.q[-1,3] = -.3     #calf
 
 
 
@@ -104,9 +108,9 @@ def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
     return TAU
 
-def pose (q,qdot,p=10):
-    q_des = [100000, 0.0231, 0.1, -0.3]
-    qdot_des = [0, 0, 0, 0]
+def pose (q,qdot,p=0.5):
+    q_des = [0, 0.0231, 0.1, -0.3]
+#    qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],
           [0,0,p,0],
@@ -120,12 +124,6 @@ def pose (q,qdot,p=10):
     # tau.flatten()
     # print("tau shape in PID:", np.shape(tau))
     return tau
-
-
-
-
-
-
 
 
 def contact (slider_h, jc, GF, y_d):        #slider_h, jc, GF, y_d
@@ -156,19 +154,15 @@ def contact (slider_h, jc, GF, y_d):        #slider_h, jc, GF, y_d
 
 first_check=0
 stopflag = False
-while cr.t[-1][0]<=Time_end:
+while leg.t[-1][0]<=Time_end:
     # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
-    cr.set_input(tau)
-    if cr.getContactFeet():
-        cr()
+    leg.set_input(tau)
+    if leg.getContactFeet():
+        leg()
         if first_check == 0:
-            t_td = cr.t[-1][0]
+            t_td = leg.t[-1][0]
             t_lo = t_td+len(GF_contact)*.01
             first_check=1
-            
-        
-
-
         stopflag = True
         slider_h = cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.]))
         TAU = compute_TAU(cr.t[-1][0], t_td, t_lo)
@@ -185,8 +179,10 @@ while cr.t[-1][0]<=Time_end:
         # tau.reshape((4,1))
         # print(np.shape(tau))
     else:
-        tau = pose (cr.q[-1,:],cr.qdot[-1,:])
-    cr()
+        tau = pose (leg.q[-1,:],leg.qdot[-1,:])
+        tau[0] = 0
+        print("tau at the pose: ", tau)
+    leg()
     # if stopflag:
     #     print("after PID")
     #     print(tau)
@@ -205,6 +201,6 @@ while cr.t[-1][0]<=Time_end:
 
 #print toc
 #print(cr.q)
-robot_anim = Anim_leg(cr.model, cr.body, cr.joint, cr.q, cr.t)
-Plot_contact_force(cr)
+robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
+Plot_contact_force(leg)
 #x_des = np.zeros(3)

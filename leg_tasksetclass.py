@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-
+@author: Nooshin Kohli
 """
 
 from numpy.linalg import inv, pinv
