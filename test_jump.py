@@ -83,7 +83,7 @@ tau = np.zeros(4)
 p = [[ ]] # the contact feet
 
 
-leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
+leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/kamiab/simulation-python-quadruped/python_simulation/legRBDL.urdf',param=None,terrain=None)
 
 # cr.tt_h = 0.1 #TODO
 # cr.tl_h = 0.3 #TODO
@@ -164,14 +164,14 @@ while leg.t[-1][0]<=Time_end:
             t_lo = t_td+len(GF_contact)*.01
             first_check=1
         stopflag = True
-        slider_h = cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.]))
-        TAU = compute_TAU(cr.t[-1][0], t_td, t_lo)
-        print("jacooooooooooooob",cr.Jc)
+        slider_h = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))
+        TAU = compute_TAU(leg.t[-1][0], t_td, t_lo)
+        print("jacooooooooooooob",leg.Jc)
 
-        tau = contact(slider_h, cr.Jc, intp_gf(TAU), intp_y(TAU))
-        cr.tt_h = t_td #TODO
-        cr.tl_h = t_lo #TODO
-        cr.slip_st_dur = 0.5
+        tau = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU))
+        leg.tt_h = t_td #TODO
+        leg.tl_h = t_lo #TODO
+        leg.slip_st_dur = 0.5
         
         # print(np.shape(cr.S))
         # print(np.shape(tau))
