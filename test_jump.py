@@ -51,7 +51,7 @@ def extract_data(input_f, input_h):
 # import test
 from object import data_input
 ##################### 
-h = data_input(dt=.01, m=1.825, L0=0.456, k0=300)
+h = data_input(dt=.01, m=1.827, L0=0.363, k0=700)
 
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
@@ -96,20 +96,20 @@ leg.slip_st_dur = 0.5 #TODO
 ############################################Homing initialize
 leg.q[-1,0] = 0.0     #slide
 leg.q[-1,1] = 0.0231  #hip
-leg.q[-1,2] = 0.1     #thigh
-leg.q[-1,3] = -.3     #calf
+leg.q[-1,2] = 0.8     #thigh
+leg.q[-1,3] = -1.5     #calf
 
 
 
 
-Time_end =0.8
+Time_end =1.2
 
 def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
     return TAU
 
-def pose (q,qdot,p=5.5,d=0.1):
-    q_des = [0, 0.0231, 0.1, -0.3]
+def pose (q,qdot,p=5,d=0.1):
+    q_des = [0, 0.0231, 0.8, -1.5]
     qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],
@@ -127,10 +127,13 @@ def pose (q,qdot,p=5.5,d=0.1):
 
 
 def contact (slider_h, jc, GF, y_d):        #slider_h, jc, GF, y_d
-    Kp = [[p,0,0,0],
-          [0,p,0,0],
-          [0,0,p,0],
-          [0,0,0,p]]
+    K_p = [[0, 0, 0, 0],
+           [0, 8, 0, 0],
+           [0, 0, 8, 0],
+           [0, 0, 0, 8]]
+    e = y_d - slider_h[2]
+    gain = [0, 0, 0, e]
+    
     # Kd = [[d,0,0,0],
     #       [0,d,0,0],
     #       [0,0,d,0],
@@ -140,10 +143,7 @@ def contact (slider_h, jc, GF, y_d):        #slider_h, jc, GF, y_d
     J_t = jc.T
     Tau_ff = np.dot(J_t, G_F)
 
-
-
-
-    tau = Tau_ff.flatten() #+ np.dot((qdot_des-qdot),Kd)
+    tau = (Tau_ff + np.dot(K_p, gain)).flatten()
     # tau.reshape(4,1)
     # tau.flatten()
     # print("tau shape in PID:", np.shape(tau))
