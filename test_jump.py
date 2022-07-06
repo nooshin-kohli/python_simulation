@@ -51,7 +51,7 @@ def extract_data(input_f, input_h):
 # import test
 from object import data_input
 ##################### 
-h = data_input(dt=.01, m=1.825, L0=0.456, k0=420)
+h = data_input(dt=.01, m=1.825, L0=0.456, k0=300)
 
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
@@ -102,24 +102,24 @@ leg.q[-1,3] = -.3     #calf
 
 
 
-Time_end = 0.6
+Time_end =0.8
 
 def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
     return TAU
 
-def pose (q,qdot,p=0.5):
+def pose (q,qdot,p=5.5,d=0.1):
     q_des = [0, 0.0231, 0.1, -0.3]
-#    qdot_des = [0, 0, 0, 0]
+    qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],
           [0,0,p,0],
           [0,0,0,p]]
-    # Kd = [[d,0,0,0],
-    #       [0,d,0,0],
-    #       [0,0,d,0],
-    #       [0,0,0,d]]
-    tau = np.dot((q_des-q),Kp).flatten() #+ np.dot((qdot_des-qdot),Kd)
+    Kd = [[d,0,0,0],
+           [0,d,0,0],
+           [0,0,d,0],
+           [0,0,0,d]]
+    tau = (np.dot((q_des-q),Kp) + np.dot((qdot_des-qdot),Kd)).flatten()
     # tau.reshape(4,1)
     # tau.flatten()
     # print("tau shape in PID:", np.shape(tau))

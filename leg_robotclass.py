@@ -707,33 +707,33 @@ class leg_robotclass(object):
     #        return -1
 
     def Liftoff_GRF(self, t, y, leg):
-#        if hasattr(self, 'for_refine'): u = self.u[-1, :]
-#        else:
-#            yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
-#            if np.allclose(y, yprev): u = self.u[-1, :]
-#            else: u = self.u0 
-##        index = self.__p0.index(leg)
-#        self.ComputeContactForce(y, self.__p0, u)
-#        return - self.Lambda[(leg - 1)*3 + 2]
-        if hasattr(self, 'for_refine'):
-            u = self.u[-1, :]
+        if hasattr(self, 'for_refine'): u = self.u[-1, :]
         else:
             yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
-            if np.allclose(y, yprev):
-                u = self.u[-1, :]
-            else:
-                u = self.u0
-        #        index = self.__p0.index(leg)
+            if np.allclose(y, yprev): u = self.u[-1, :]
+            else: u = self.u0 
+#        index = self.__p0.index(leg)
         self.ComputeContactForce(y, self.__p0, u)
-        if leg == 1:
-            tt = self.tt_h
-        elif leg == 2:
-            print("leg 2 is added !!!!!!!")  # tt = self.tt_f
-
-        if t - tt < .25 * self.slip_st_dur:
-            return -1
-        else:
-            return - self.Lambda[(leg - 1) * 2 + 1]
+        return - self.Lambda[(leg - 1)*3 + 2]
+#        if hasattr(self, 'for_refine'):
+#            u = self.u[-1, :]
+#        else:
+#            yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
+#            if np.allclose(y, yprev):
+#                u = self.u[-1, :]
+#            else:
+#                u = self.u0
+#        #        index = self.__p0.index(leg)
+#        self.ComputeContactForce(y, self.__p0, u)
+#        if leg == 1:
+#            tt = self.tt_h
+#        elif leg == 2:
+#            print("leg 2 is added !!!!!!!")  # tt = self.tt_f
+#
+#        if t - tt < .25 * self.slip_st_dur:
+#            return -1
+#        else:
+#            return - self.Lambda[(leg - 1) * 2 + 1]
 
 #            if leg == 1: return t - self.tt_h - self.slip_st_dur
 #            elif leg == 2: return t - self.tt_f - self.slip_st_dur
@@ -897,8 +897,8 @@ class leg_robotclass(object):
 #            print("I AM in Line 897")
             p0.remove(1)
             self.tl_h = self.trefined
-#            self.xl_h, self.dxl_h = \
-#                self.get_com(body_part='h', q=q, calc_velocity=True)
+            self.xl_h, self.dxl_h = \
+                self.get_com(body_part='h', q=q, calc_velocity=True)
             self.ql = self.q[-1]
             # TODO: should be leg specific?
         #            self.slip_sw_dur = \

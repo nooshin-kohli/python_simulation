@@ -3,6 +3,8 @@
 Year: 2022
 
 @author: Nooshin Kohli
+
+This code use a PID controller to control posture of the robot in landing.
 """
 
 from __future__ import division
@@ -93,7 +95,9 @@ while leg.t[-1][0]<=Time_end:
     if 1 in leg.getContactFeet():
         
 #        print(cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.])))
-        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],4.5,0.2)
+        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],5.5,0.1)
+#        q_prev = leg.q[-1]
+#        print("Lambda: ", leg.Lambda)
 #        print("tau:", tau)
         
         stopflag = True
