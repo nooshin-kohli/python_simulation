@@ -43,7 +43,7 @@ class leg_controlclass(object):
         
 #        JT = self.robot.Jc.T
         JT = self.robot.Jc_from_cpoints(\
-        self.robot.model, self.robot.q[-1, :], self.robot.body,\
+        self.robot.model, self.robot.q[-1, :],\
         self.robot.GetContactFeet()).T
         
         m, n = JT.shape

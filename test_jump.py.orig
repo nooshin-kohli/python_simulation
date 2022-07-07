@@ -51,7 +51,11 @@ def extract_data(input_f, input_h):
 # import test
 from object import data_input
 ##################### 
+<<<<<<< HEAD
+h = data_input(dt=.01, m=1.825, L0=0.456, k0=425)
+=======
 h = data_input(dt=.01, m=1.827, L0=0.363, k0=700)
+>>>>>>> control
 
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
@@ -102,7 +106,11 @@ leg.q[-1,3] = -1.5     #calf
 
 
 
+<<<<<<< HEAD
+Time_end = 0.535
+=======
 Time_end =1.2
+>>>>>>> control
 
 def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
@@ -166,14 +174,12 @@ while leg.t[-1][0]<=Time_end:
         stopflag = True
         slider_h = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))
         TAU = compute_TAU(leg.t[-1][0], t_td, t_lo)
-#        print("jacooooooooooooob",leg.Jc)
+        print("jacooooooooooooob",leg.Jc)
 
         tau = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU))
-        tau[0] = 0
-        print("tau at the contact: ", tau)
         leg.tt_h = t_td #TODO
         leg.tl_h = t_lo #TODO
-        leg.slip_st_dur = leg.tl_h-leg.tt_h
+        leg.slip_st_dur = 0.5
         
         # print(np.shape(cr.S))
         # print(np.shape(tau))
