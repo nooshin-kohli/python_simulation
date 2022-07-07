@@ -51,7 +51,7 @@ def extract_data(input_f, input_h):
 # import test
 from object import data_input
 ##################### 
-h = data_input(dt=.01, m=1.825, L0=0.456, k0=420)
+h = data_input(dt=.01, m=1.825, L0=0.456, k0=425)
 
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
