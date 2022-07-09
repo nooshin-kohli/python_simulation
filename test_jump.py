@@ -51,7 +51,7 @@ def extract_data(input_f, input_h):
 # import test
 from object import data_input
 ##################### 
-h = data_input(dt=.01, m=1.827, L0=0.363, k0=700)
+h = data_input(dt=.01, m=1.825, L0=0.362, k0=700)
 
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
@@ -70,7 +70,7 @@ xs = np.linspace(0, 1, 1000)
 
 t = np.array([0])
 
-dt = .005 # step size
+dt = .001 # step size
 
 # initiate stats with dummy values
 q = np.zeros((1, 0)) # joint position
@@ -108,7 +108,7 @@ def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
     return TAU
 
-def pose (q,qdot,p=5,d=0.1):
+def pose (q,qdot,p=3.5,d=0.1):
     q_des = [0, 0.0231, 0.8, -1.5]
     qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
@@ -149,9 +149,9 @@ def contact (slider_h, jc, GF, y_d):        #slider_h, jc, GF, y_d
     # print("tau shape in PID:", np.shape(tau))
     return tau
 
-
-
-
+t = []
+time_pre = time.time()
+h_vec = []
 first_check=0
 stopflag = False
 while leg.t[-1][0]<=Time_end:
@@ -183,26 +183,25 @@ while leg.t[-1][0]<=Time_end:
     else:
         tau = pose (leg.q[-1,:],leg.qdot[-1,:])
         tau[0] = 0
-        print("tau at the pose: ", tau)
+#        print("tau at the pose: ", tau)
     leg()
+    h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])
+    time_now = leg.t[-1,:]
+#    time_pre = time_now
+    t.append(time_now)
     # if stopflag:
     #     print("after PID")
     #     print(tau)
     #     break
-   
-#    print ("Contact foot", cr.getContactFeet())
-    
 
-
-
-
-
-                                            
-
-#toc = time.time() - tic
-
-#print toc
-#print(cr.q)
+print("time:",np.shape(t))
+print("h_vec: ",np.shape(h_vec))
 robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
 Plot_contact_force(leg)
+plt.figure()
+plt.title("slip height")
+plt.plot(t,h_vec,'r')
+plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
+plt.legend(["simulation", "slip model"], loc ="upper right")
+plt.show()
 #x_des = np.zeros(3)
