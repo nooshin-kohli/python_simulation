@@ -18,10 +18,7 @@ import matplotlib.pyplot as plt
 from scipy import linspace
 
 from leg_robotclass import leg_robotclass
-#from Centauro_RobotClass import Centauro_RobotClass
 from scipy.interpolate import InterpolatedUnivariateSpline as intp
-from leg_controlclass import leg_controlclass
-from leg_tasksetclass import TaskSet
 from Utils import Anim_leg, Plot_base_coordinate, Plot_foot_tip, \
 Plot_contact_force, traj_plan
 
@@ -51,7 +48,7 @@ def extract_data(input_f, input_h):
 # import test
 from object import data_input
 ##################### 
-h = data_input(dt=.01, m=1.825, L0=0.362, k0=700)
+h = data_input(dt=.01, m=3.825, L0=0.362, k0=1500)
 
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
@@ -67,6 +64,12 @@ intp_y_comp =  intp(time_test, h.function(3)[1], k=1)
 xs = np.linspace(0, 1, 1000)
 # plt.plot(xs, intp_y(xs), 'r', lw=3, alpha=0.7)
 # plt.show()
+
+plt.figure()
+plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
+plt.show()
+
+
 
 t = np.array([0])
 
@@ -89,7 +92,7 @@ leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/
 # cr.tl_h = 0.3 #TODO
 # cr.tt_f = 0.1 #TODO
 # cr.tl_f = 0.3 #TODO
-leg.slip_st_dur = 0.5 #TODO
+leg.slip_st_dur = len(GF_contact)*.01 #TODO
 
 
 
@@ -126,34 +129,49 @@ def pose (q,qdot,p=3.5,d=0.1):
     return tau
 
 
-def contact (slider_h, jc, GF, y_d):        #slider_h, jc, GF, y_d
+def contact (slider_h, jc, GF, y_d, delta_time):        #slider_h, jc, GF, y_d
+    global e_pre
+    p = 50
     K_p = [[0, 0, 0, 0],
-           [0, 8, 0, 0],
-           [0, 0, 8, 0],
-           [0, 0, 0, 8]]
+           [0, p, 0, 0],
+           [0, 0, p, 0],
+           [0, 0, 0, p]]
     e = y_d - slider_h[2]
     gain = [0, 0, 0, e]
-    
-    # Kd = [[d,0,0,0],
-    #       [0,d,0,0],
-    #       [0,0,d,0],
-    #       [0,0,0,d]]
+
+
+    print("e:",e)
+    print("e_pre:",e_pre)
+    print("delta_time:",delta_time)
+
+    e_dot = (e - e_pre)/delta_time
+    e_pre=e
+    e_dot = [0,0,0,e_dot]
+
+    d= 1  
+    Kd = [[d,0,0,0],
+          [0,d,0,0],
+          [0,0,d,0],
+          [0,0,0,d]]
 
     G_F=[0,0,-GF]
     J_t = jc.T
     Tau_ff = np.dot(J_t, G_F)
-
-    tau = (Tau_ff + np.dot(K_p, gain)).flatten()
+    print("D gain:",np.dot(Kd, e_dot))
+    tau = (Tau_ff - np.dot(K_p, gain)- np.dot(Kd, e_dot)).flatten()
     # tau.reshape(4,1)
     # tau.flatten()
     # print("tau shape in PID:", np.shape(tau))
-    return tau
+    return tau, e_pre
 
 t = []
 time_pre = time.time()
 h_vec = []
 first_check=0
 stopflag = False
+global e_pre 
+e_pre = 0
+t_pre = 0
 while leg.t[-1][0]<=Time_end:
     # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
     leg.set_input(tau)
@@ -167,13 +185,15 @@ while leg.t[-1][0]<=Time_end:
         slider_h = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))
         TAU = compute_TAU(leg.t[-1][0], t_td, t_lo)
 #        print("jacooooooooooooob",leg.Jc)
-
-        tau = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU))
+        delta_time = leg.t[-1][0] - t_pre
+        tau,e_pre = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time)
         tau[0] = 0
         print("tau at the contact: ", tau)
         leg.tt_h = t_td #TODO
         leg.tl_h = t_lo #TODO
         leg.slip_st_dur = leg.tl_h-leg.tt_h
+
+        t_pre = leg.t[-1][0]
         
         # print(np.shape(cr.S))
         # print(np.shape(tau))
@@ -196,12 +216,13 @@ while leg.t[-1][0]<=Time_end:
 
 print("time:",np.shape(t))
 print("h_vec: ",np.shape(h_vec))
-robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
-Plot_contact_force(leg)
 plt.figure()
 plt.title("slip height")
 plt.plot(t,h_vec,'r')
 plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
 plt.legend(["simulation", "slip model"], loc ="upper right")
 plt.show()
+robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
+Plot_contact_force(leg)
+
 #x_des = np.zeros(3)

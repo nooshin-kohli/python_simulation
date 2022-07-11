@@ -1,5 +1,6 @@
 """
-@author: Nooshin Kohli
+   Author : Nooshin Kohli
+   Year : 2021-2022
 """
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
@@ -13,7 +14,7 @@ sys.path.append(dir)
 import rbdl
 import numpy as np
 #from leg_robotclass import ROBOT
-from Centauro_RobotClass import Centauro_RobotClass
+from leg_robotclass import leg_robotclass
 
 
 
@@ -275,9 +276,6 @@ def Plot_ff_fb(cr, u_fb):
     plt.subplot(224)
     plt.title('Comparison')
     plt.plot(cr.t, np.clip(np.abs(u_fb/cr.u*100), 0, 100))
-    
-    
-
     plt.show()
     return None
     

@@ -95,7 +95,7 @@ class leg_robotclass(object):
         self.mass_thigh = 1.062
         self.mass_calf = 0.133
 
-        self.total_mass = self.mass_hip + self.mass_thigh + self.mass_calf
+        self.total_mass = self.mass_hip + self.mass_thigh + self.mass_calf+1
 #        print("total :")
 
         self.foot_pose_h = 0
