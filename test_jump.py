@@ -86,7 +86,7 @@ tau = np.zeros(4)
 p = [[ ]] # the contact feet
 
 
-leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
+leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/lenovo/python_simulation/python_simulation/legRBDL.urdf',param=None,terrain=None)
 
 # cr.tt_h = 0.1 #TODO
 # cr.tl_h = 0.3 #TODO

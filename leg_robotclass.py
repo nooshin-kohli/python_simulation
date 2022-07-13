@@ -8,7 +8,7 @@ import sys
 from os.path import expanduser
 
 home = expanduser("~")
-dir = home + '/projects/rbdl/build/python'
+dir = home + '/rbdl/build/python'
 sys.path.append(dir)
 import rbdl
 import numpy as np

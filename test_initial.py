@@ -18,8 +18,8 @@ import matplotlib.pyplot as plt
 
 from leg_robotclass import leg_robotclass
 #from Centauro_RobotClass import Centauro_RobotClass
-from leg_controlclass import leg_controlclass
-from leg_tasksetclass import TaskSet
+# from leg_controlclass import leg_controlclass
+# from leg_tasksetclass import TaskSet
 from Utils import Anim_leg, Plot_base_coordinate, Plot_foot_tip, \
 Plot_contact_force, traj_plan
 
@@ -38,7 +38,7 @@ tau = np.zeros(4) # control inputs
 
 p = [[ ]] # the contact feet
 
-leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/nooshin/python_simulation/legRBDL.urdf',param=None,terrain=None)
+leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/lenovo/python_simulation/python_simulation/legRBDL.urdf',param=None,terrain=None)
 # ct = TaskSet(cr)
 # cc = leg_controlclass(cr)
 #cr.tt_h = 0.1 #TODO
@@ -63,11 +63,11 @@ leg.q[-1,3] = -0.1
 # cr.q[-1,3] = .05
 # cr.qdot[-1,0] = -0.2
 
-Time_end = 1.5
+Time_end = 2
 # tau[0,0] = 0
 # tau[2] = 40
 def pidctrl(q, qdot, p, d):
-    q_des = [0, 0, 0, -0.2]
+    q_des = [0, 0, -0.1, -0.3]
     qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],
@@ -95,7 +95,7 @@ while leg.t[-1][0]<=Time_end:
     if 1 in leg.getContactFeet():
         
 #        print(cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.])))
-        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],5.5,0.1)
+        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],4,0.1)
 #        q_prev = leg.q[-1]
 #        print("Lambda: ", leg.Lambda)
 #        print("tau:", tau)
