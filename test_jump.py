@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from scipy import linspace
 
 from leg_robotclass import leg_robotclass
+from leg_controlclass import leg_control
 from scipy.interpolate import InterpolatedUnivariateSpline as intp
 from Utils import Anim_leg, Plot_base_coordinate, Plot_foot_tip, \
 Plot_contact_force, traj_plan
@@ -86,7 +87,7 @@ tau = np.zeros(4)
 p = [[ ]] # the contact feet
 
 
-leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/lenovo/python_simulation/python_simulation/legRBDL.urdf',param=None,terrain=None)
+leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/kamiab/simulation-python-quadruped/python_simulation/legRBDL.urdf',param=None,terrain=None)
 
 # cr.tt_h = 0.1 #TODO
 # cr.tl_h = 0.3 #TODO
@@ -102,67 +103,12 @@ leg.q[-1,1] = 0.0231  #hip
 leg.q[-1,2] = 0.8     #thigh
 leg.q[-1,3] = -1.5     #calf
 
+leg_control = leg_control(leg)
 
 
 
-Time_end =1.2
+Time_end =3
 
-def compute_TAU(t_now, t_td, t_lo):
-    TAU = (t_now - t_td)/(t_lo - t_td)
-    return TAU
-
-def pose (q,qdot,p=3.5,d=0.1):
-    q_des = [0, 0.0231, 0.8, -1.5]
-    qdot_des = [0, 0, 0, 0]
-    Kp = [[p,0,0,0],
-          [0,p,0,0],
-          [0,0,p,0],
-          [0,0,0,p]]
-    Kd = [[d,0,0,0],
-           [0,d,0,0],
-           [0,0,d,0],
-           [0,0,0,d]]
-    tau = (np.dot((q_des-q),Kp) + np.dot((qdot_des-qdot),Kd)).flatten()
-    # tau.reshape(4,1)
-    # tau.flatten()
-    # print("tau shape in PID:", np.shape(tau))
-    return tau
-
-
-def contact (slider_h, jc, GF, y_d, delta_time):        #slider_h, jc, GF, y_d
-    global e_pre
-    p = 50
-    K_p = [[0, 0, 0, 0],
-           [0, p, 0, 0],
-           [0, 0, p, 0],
-           [0, 0, 0, p]]
-    e = y_d - slider_h[2]
-    gain = [0, 0, 0, e]
-
-
-    print("e:",e)
-    print("e_pre:",e_pre)
-    print("delta_time:",delta_time)
-
-    e_dot = (e - e_pre)/delta_time
-    e_pre=e
-    e_dot = [0,0,0,e_dot]
-
-    d= 1  
-    Kd = [[d,0,0,0],
-          [0,d,0,0],
-          [0,0,d,0],
-          [0,0,0,d]]
-
-    G_F=[0,0,-GF]
-    J_t = jc.T
-    Tau_ff = np.dot(J_t, G_F)
-    print("D gain:",np.dot(Kd, e_dot))
-    tau = (Tau_ff - np.dot(K_p, gain)- np.dot(Kd, e_dot)).flatten()
-    # tau.reshape(4,1)
-    # tau.flatten()
-    # print("tau shape in PID:", np.shape(tau))
-    return tau, e_pre
 
 t = []
 time_pre = time.time()
@@ -173,7 +119,7 @@ global e_pre
 e_pre = 0
 t_pre = 0
 while leg.t[-1][0]<=Time_end:
-    # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
+   
     leg.set_input(tau)
     if leg.getContactFeet():
         leg()
@@ -181,12 +127,14 @@ while leg.t[-1][0]<=Time_end:
             t_td = leg.t[-1][0]
             t_lo = t_td+len(GF_contact)*.01
             first_check=1
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         stopflag = True
         slider_h = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))
-        TAU = compute_TAU(leg.t[-1][0], t_td, t_lo)
-#        print("jacooooooooooooob",leg.Jc)
+        TAU = leg_control.compute_TAU(leg.t[-1][0], t_td, t_lo)
+        
         delta_time = leg.t[-1][0] - t_pre
-        tau,e_pre = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time)
+        tau,e_pre = leg_control.stance(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time, e_pre)
+        
         tau[0] = 0
         print("tau at the contact: ", tau)
         leg.tt_h = t_td #TODO
@@ -195,24 +143,20 @@ while leg.t[-1][0]<=Time_end:
 
         t_pre = leg.t[-1][0]
         
-        # print(np.shape(cr.S))
-        # print(np.shape(tau))
-        # print(np.shape(cr.h))
-        # tau.reshape((4,1))
-        # print(np.shape(tau))
+        
     else:
-        tau = pose (leg.q[-1,:],leg.qdot[-1,:])
+        tau = leg_control.flight(leg.q[-1,:],leg.qdot[-1,:])
+        
         tau[0] = 0
-#        print("tau at the pose: ", tau)
+        first_check=0
+        
+
+
     leg()
     h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])
     time_now = leg.t[-1,:]
-#    time_pre = time_now
     t.append(time_now)
-    # if stopflag:
-    #     print("after PID")
-    #     print(tau)
-    #     break
+    
 
 print("time:",np.shape(t))
 print("h_vec: ",np.shape(h_vec))
