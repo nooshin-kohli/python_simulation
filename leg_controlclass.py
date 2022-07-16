@@ -26,7 +26,7 @@ class leg_control(object):
         TAU = (t_now - t_td)/(t_lo - t_td)
         return TAU
 
-    def pose (self,q,qdot,p=3.5,d=0.1):
+    def flight (self,q,qdot,p=6,d=0.1):
         q_des = [0, 0.0231, 0.8, -1.5]
         qdot_des = [0, 0, 0, 0]
         Kp = [[p,0,0,0],
@@ -44,8 +44,8 @@ class leg_control(object):
         return tau
 
 
-    def contact (slef,slider_h, jc, GF, y_d, delta_time):        #slider_h, jc, GF, y_d
-        global e_pre
+    def stance (slef,slider_h, jc, GF, y_d, delta_time, e_pre):        #slider_h, jc, GF, y_d
+        
         p = 50
         K_p = [[0, 0, 0, 0],
                [0, p, 0, 0],

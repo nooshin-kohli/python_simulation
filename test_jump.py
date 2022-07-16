@@ -8,9 +8,6 @@ from pickle import NONE
 
 import sys
 
-#sys.path.append('/home/mshahbazi/RBDL/build/python/')
-# sys.path.append('/home/zahra/rbdl-dev/build/python')
-
 
 import numpy as np
 import time
@@ -109,63 +106,6 @@ leg_control = leg_control(leg)
 
 Time_end =3
 
-def compute_TAU(t_now, t_td, t_lo):
-    TAU = (t_now - t_td)/(t_lo - t_td)
-    return TAU
-
-def pose (q,qdot,p=6,d=0.1):
-    q_des = [0, 0.0231, 0.8, -1.5]
-    qdot_des = [0, 0, 0, 0]
-    Kp = [[p,0,0,0],
-          [0,p,0,0],
-          [0,0,p,0],
-          [0,0,0,p]]
-    Kd = [[d,0,0,0],
-           [0,d,0,0],
-           [0,0,d,0],
-           [0,0,0,d]]
-    tau = (np.dot((q_des-q),Kp) + np.dot((qdot_des-qdot),Kd)).flatten()
-    # tau.reshape(4,1)
-    # tau.flatten()
-    # print("tau shape in PID:", np.shape(tau))
-    return tau
-
-
-def contact (slider_h, jc, GF, y_d, delta_time):        #slider_h, jc, GF, y_d
-    global e_pre
-    p = 50
-    K_p = [[0, 0, 0, 0],
-           [0, p, 0, 0],
-           [0, 0, p, 0],
-           [0, 0, 0, p]]
-    e = y_d - slider_h[2]
-    gain = [0, 0, 0, e]
-
-
-    print("e:",e)
-    print("e_pre:",e_pre)
-    print("delta_time:",delta_time)
-
-    e_dot = (e - e_pre)/delta_time
-    e_pre=e
-    e_dot = [0,0,0,e_dot]
-
-    d= 1
-    Kd = [[d,0,0,0],
-          [0,d,0,0],
-          [0,0,d,0],
-          [0,0,0,d]]
-
-    G_F=[0,0,-GF]
-    J_t = jc.T
-    Tau_ff = np.dot(J_t, G_F)
-    print("D gain:",np.dot(Kd, e_dot))
-    tau = (Tau_ff - np.dot(K_p, gain)- np.dot(Kd, e_dot)).flatten()
-    print("fooooot:", leg.computeFootState('h'))
-    # tau.reshape(4,1)
-    # tau.flatten()
-    # print("tau shape in PID:", np.shape(tau))
-    return tau, e_pre
 
 t = []
 time_pre = time.time()
@@ -176,7 +116,7 @@ global e_pre
 e_pre = 0
 t_pre = 0
 while leg.t[-1][0]<=Time_end:
-    # print(np.shape(np.dot(cr.S.T, np.zeros_like(cr.u[-1, :]))))
+   
     leg.set_input(tau)
     if leg.getContactFeet():
         leg()
@@ -184,14 +124,14 @@ while leg.t[-1][0]<=Time_end:
             t_td = leg.t[-1][0]
             t_lo = t_td+len(GF_contact)*.01
             first_check=1
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         stopflag = True
         slider_h = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))
-        # TAU = leg_control.compute_TAU(leg.t[-1][0], t_td, t_lo)
-        TAU = compute_TAU(leg.t[-1][0], t_td, t_lo)
-#        print("jacooooooooooooob",leg.Jc)
+        TAU = leg_control.compute_TAU(leg.t[-1][0], t_td, t_lo)
+        
         delta_time = leg.t[-1][0] - t_pre
-        # tau,e_pre = leg_control.contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time)
-        tau,e_pre = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time)
+        tau,e_pre = leg_control.stance(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time, e_pre)
+        
         tau[0] = 0
         print("tau at the contact: ", tau)
         leg.tt_h = t_td #TODO
@@ -200,32 +140,21 @@ while leg.t[-1][0]<=Time_end:
 
         t_pre = leg.t[-1][0]
         
-        # print(np.shape(cr.S))
-        # print(np.shape(tau))
-        # print(np.shape(cr.h))
-        # tau.reshape((4,1))
-        # print(np.shape(tau))
+        
     else:
-        # tau = leg_control.pose(leg.q[-1,:],leg.qdot[-1,:])
-        tau = pose (leg.q[-1,:],leg.qdot[-1,:])
+        tau = leg_control.flight(leg.q[-1,:],leg.qdot[-1,:])
+        
         tau[0] = 0
         first_check=0
         
-        # print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-#        print("tau at the pose: ", tau)
+
     leg()
     h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])
     time_now = leg.t[-1,:]
-#    time_pre = time_now
     t.append(time_now)
-    # if stopflag:
-    #     print("after PID")
-    #     print(tau)
-    #     break
+    
 
-print("time:",np.shape(t))
-print("h_vec: ",np.shape(h_vec))
 plt.figure()
 plt.title("slip height")
 plt.plot(t,h_vec,'r')
@@ -234,5 +163,3 @@ plt.legend(["simulation", "slip model"], loc ="upper right")
 plt.show()
 robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
 Plot_contact_force(leg)
-
-#x_des = np.zeros(3)
