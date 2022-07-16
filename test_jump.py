@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from scipy import linspace
 
 from leg_robotclass import leg_robotclass
+from leg_controlclass import leg_control
 from scipy.interpolate import InterpolatedUnivariateSpline as intp
 from Utils import Anim_leg, Plot_base_coordinate, Plot_foot_tip, \
 Plot_contact_force, traj_plan
@@ -62,8 +63,8 @@ intp_y = intp(tau_s, y_des_contact, k=1)
 intp_y_comp =  intp(time_test, h.function(3)[1], k=1)
 
 xs = np.linspace(0, 1, 1000)
-# plt.plot(xs, intp_y(xs), 'r', lw=3, alpha=0.7)
-# plt.show()
+plt.plot(xs, intp_gf(xs), 'r', lw=3, alpha=0.7)
+plt.show()
 
 plt.figure()
 plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
@@ -102,16 +103,17 @@ leg.q[-1,1] = 0.0231  #hip
 leg.q[-1,2] = 0.8     #thigh
 leg.q[-1,3] = -1.5     #calf
 
+leg_control = leg_control(leg)
 
 
 
-Time_end =1.2
+Time_end =3
 
 def compute_TAU(t_now, t_td, t_lo):
     TAU = (t_now - t_td)/(t_lo - t_td)
     return TAU
 
-def pose (q,qdot,p=3.5,d=0.1):
+def pose (q,qdot,p=6,d=0.1):
     q_des = [0, 0.0231, 0.8, -1.5]
     qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
@@ -148,7 +150,7 @@ def contact (slider_h, jc, GF, y_d, delta_time):        #slider_h, jc, GF, y_d
     e_pre=e
     e_dot = [0,0,0,e_dot]
 
-    d= 1  
+    d= 1
     Kd = [[d,0,0,0],
           [0,d,0,0],
           [0,0,d,0],
@@ -159,6 +161,7 @@ def contact (slider_h, jc, GF, y_d, delta_time):        #slider_h, jc, GF, y_d
     Tau_ff = np.dot(J_t, G_F)
     print("D gain:",np.dot(Kd, e_dot))
     tau = (Tau_ff - np.dot(K_p, gain)- np.dot(Kd, e_dot)).flatten()
+    print("fooooot:", leg.computeFootState('h'))
     # tau.reshape(4,1)
     # tau.flatten()
     # print("tau shape in PID:", np.shape(tau))
@@ -183,9 +186,11 @@ while leg.t[-1][0]<=Time_end:
             first_check=1
         stopflag = True
         slider_h = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))
+        # TAU = leg_control.compute_TAU(leg.t[-1][0], t_td, t_lo)
         TAU = compute_TAU(leg.t[-1][0], t_td, t_lo)
 #        print("jacooooooooooooob",leg.Jc)
         delta_time = leg.t[-1][0] - t_pre
+        # tau,e_pre = leg_control.contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time)
         tau,e_pre = contact(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time)
         tau[0] = 0
         print("tau at the contact: ", tau)
@@ -201,8 +206,13 @@ while leg.t[-1][0]<=Time_end:
         # tau.reshape((4,1))
         # print(np.shape(tau))
     else:
+        # tau = leg_control.pose(leg.q[-1,:],leg.qdot[-1,:])
         tau = pose (leg.q[-1,:],leg.qdot[-1,:])
         tau[0] = 0
+        first_check=0
+        
+        # print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
 #        print("tau at the pose: ", tau)
     leg()
     h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])

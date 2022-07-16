@@ -63,11 +63,11 @@ leg.q[-1,3] = -0.1
 # cr.q[-1,3] = .05
 # cr.qdot[-1,0] = -0.2
 
-Time_end = 2
+Time_end = 2.5
 # tau[0,0] = 0
 # tau[2] = 40
 def pidctrl(q, qdot, p, d):
-    q_des = [0, 0, -0.1, -0.3]
+    q_des = [0, 0, -0.1, -0.2]
     qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],

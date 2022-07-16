@@ -707,33 +707,33 @@ class leg_robotclass(object):
     #        return -1
 
     def Liftoff_GRF(self, t, y, leg):
-        if hasattr(self, 'for_refine'): u = self.u[-1, :]
-        else:
-            yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
-            if np.allclose(y, yprev): u = self.u[-1, :]
-            else: u = self.u0 
-#        index = self.__p0.index(leg)
-        self.ComputeContactForce(y, self.__p0, u)
-        return - self.Lambda[(leg - 1)*3 + 2]
-#        if hasattr(self, 'for_refine'):
-#            u = self.u[-1, :]
-#        else:
-#            yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
-#            if np.allclose(y, yprev):
-#                u = self.u[-1, :]
-#            else:
-#                u = self.u0
-#        #        index = self.__p0.index(leg)
-#        self.ComputeContactForce(y, self.__p0, u)
-#        if leg == 1:
-#            tt = self.tt_h
-#        elif leg == 2:
-#            print("leg 2 is added !!!!!!!")  # tt = self.tt_f
-#
-#        if t - tt < .25 * self.slip_st_dur:
-#            return -1
-#        else:
-#            return - self.Lambda[(leg - 1) * 2 + 1]
+#         if hasattr(self, 'for_refine'): u = self.u[-1, :]
+#         else:
+#             yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
+#             if np.allclose(y, yprev): u = self.u[-1, :]
+#             else: u = self.u0 
+# #        index = self.__p0.index(leg)
+#         self.ComputeContactForce(y, self.__p0, u)
+#         return - self.Lambda[(leg - 1)*3 + 2]
+       if hasattr(self, 'for_refine'):
+           u = self.u[-1, :]
+       else:
+           yprev = np.concatenate((self.q[-1, :], self.qdot[-1, :]))
+           if np.allclose(y, yprev):
+               u = self.u[-1, :]
+           else:
+               u = self.u0
+       #        index = self.__p0.index(leg)
+       self.ComputeContactForce(y, self.__p0, u)
+       if leg == 1:
+           tt = self.tt_h
+       elif leg == 2:
+           print("leg 2 is added !!!!!!!")  # tt = self.tt_f
+
+       if t - tt < .25 * self.slip_st_dur:
+           return -1
+       else:
+           return - self.Lambda[(leg - 1) * 2 + 1]
 
 #            if leg == 1: return t - self.tt_h - self.slip_st_dur
 #            elif leg == 2: return t - self.tt_f - self.slip_st_dur
