@@ -41,11 +41,11 @@ p = [[ ]] # the contact feet
 leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/lenovo/python_simulation/python_simulation/legRBDL.urdf',param=None,terrain=None)
 # ct = TaskSet(cr)
 # cc = leg_controlclass(cr)
-#cr.tt_h = 0.1 #TODO
+# leg.tt_h = 0.3 #TODO
 #cr.tl_h = 0.3 #TODO
 #cr.tt_f = 0.1 #TODO
 #cr.tl_f = 0.3 #TODO
-leg.slip_st_dur = 0.8 #TODO
+leg.slip_st_dur = 0.05 #TODO
 
 #tau[1]  = 1
 #tau[3] = .01
@@ -67,7 +67,7 @@ Time_end = 2.5
 # tau[0,0] = 0
 # tau[2] = 40
 def pidctrl(q, qdot, p, d):
-    q_des = [0, 0, -0.1, -0.2]
+    q_des = [0, 0, -0.2, -0.5]
     qdot_des = [0, 0, 0, 0]
     Kp = [[p,0,0,0],
           [0,p,0,0],
@@ -95,7 +95,7 @@ while leg.t[-1][0]<=Time_end:
     if 1 in leg.getContactFeet():
         
 #        print(cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.])))
-        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],4,0.1)
+        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],7,0.1)
 #        q_prev = leg.q[-1]
 #        print("Lambda: ", leg.Lambda)
 #        print("tau:", tau)

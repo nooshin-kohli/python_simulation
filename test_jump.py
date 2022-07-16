@@ -60,12 +60,12 @@ intp_y = intp(tau_s, y_des_contact, k=1)
 intp_y_comp =  intp(time_test, h.function(3)[1], k=1)
 
 xs = np.linspace(0, 1, 1000)
-plt.plot(xs, intp_gf(xs), 'r', lw=3, alpha=0.7)
-plt.show()
+# plt.plot(xs, intp_gf(xs), 'r', lw=3, alpha=0.7)
+# plt.show()
 
-plt.figure()
-plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
-plt.show()
+# plt.figure()
+# plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
+# plt.show()
 
 
 
