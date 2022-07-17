@@ -63,6 +63,8 @@
 
     <link name="trunk_inertia">
         <inertial>
+            <mass value="100"/>
+            <inertia ixx="0.011253" ixy="0" ixz="0.0" iyy="0.036203" iyz="-0.0" izz="0.042673"/>
 
         </inertial>
     </link>
@@ -99,7 +101,7 @@
         <child link="jump"/>
         <limit effort="20" lower="-0.7" upper="0.5" velocity="0.5"/>
         <origin rpy="0 0 0" xyz="0 0 0.9"/>
-        <dynamics damping="3" friction="0"/>
+        <dynamics damping="0" friction="0"/>
     </joint>
 
     <link name="jump">
@@ -129,7 +131,7 @@
         <parent link="jump"/>
         <child link="hip"/>
         <axis xyz="1 0 0"/>
-        <dynamics damping="1" friction="0.1"/>
+        <dynamics damping="0" friction="0"/>
         <limit effort="20" lower="-0.872664625997" upper="1.0471975512" velocity="1.6"/>
   </joint>
 
@@ -160,7 +162,7 @@
     <parent link="hip"/>
     <child link="thigh"/>
     <axis xyz="0 1 0"/>
-    <dynamics damping="1" friction="0.1" />
+    <dynamics damping="0" friction="0" />
     <limit effort="20" lower="-0.523598775598" upper="3.92699081699" velocity="1.6"/>
   </joint>
 

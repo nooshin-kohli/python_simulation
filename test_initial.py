@@ -45,7 +45,7 @@ leg = leg_robotclass(t=t,q=q,qdot=qdot,p=p,u=tau,dt=dt,urdf_file='/home/lenovo/p
 #cr.tl_h = 0.3 #TODO
 #cr.tt_f = 0.1 #TODO
 #cr.tl_f = 0.3 #TODO
-leg.slip_st_dur = 0.05 #TODO
+leg.slip_st_dur = 0.005 #TODO
 
 #tau[1]  = 1
 #tau[3] = .01
@@ -95,7 +95,7 @@ while leg.t[-1][0]<=Time_end:
     if 1 in leg.getContactFeet():
         
 #        print(cr.CalcBodyToBase(cr.model.GetBodyId('jump'),np.array([0.,0.,0.])))
-        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],7,0.1)
+        tau = pidctrl(leg.q[-1: ], leg.qdot[-1,:],1,0.1)
 #        q_prev = leg.q[-1]
 #        print("Lambda: ", leg.Lambda)
 #        print("tau:", tau)

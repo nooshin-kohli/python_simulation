@@ -49,19 +49,20 @@ from object import data_input
 h = data_input(dt=.01, m=3.825, L0=0.362, k0=1500)
 
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
-
+print(GF_contact)
 # plt.plot(linspace(0,1,len(GF_contact)), GF_contact)
 # plt.show()
 ##### interpolate y_des & GF_contact
 tau_s = np.linspace(0, 1, len(GF_contact))
+print(tau_s)
 time_test= np.linspace (0, 3, len(h.function(3)[1]))
 intp_gf = intp(tau_s, GF_contact, k=1)
 intp_y = intp(tau_s, y_des_contact, k=1)
 intp_y_comp =  intp(time_test, h.function(3)[1], k=1)
 
 xs = np.linspace(0, 1, 1000)
-# plt.plot(xs, intp_gf(xs), 'r', lw=3, alpha=0.7)
-# plt.show()
+plt.plot(xs, intp_gf(xs), 'r', lw=3, alpha=0.7)
+plt.show()
 
 # plt.figure()
 # plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
@@ -98,7 +99,7 @@ leg.slip_st_dur = len(GF_contact)*.01 #TODO
 leg.q[-1,0] = 0.0     #slide
 leg.q[-1,1] = 0.0231  #hip
 leg.q[-1,2] = 0.8     #thigh
-leg.q[-1,3] = -1.5     #calf
+leg.q[-1,3] = -1.5    #calf
 
 leg_control = leg_control(leg)
 
@@ -115,6 +116,10 @@ stopflag = False
 global e_pre 
 e_pre = 0
 t_pre = 0
+
+slip_gf_list=[]
+time_list=[]
+
 while leg.t[-1][0]<=Time_end:
    
     leg.set_input(tau)
@@ -132,18 +137,25 @@ while leg.t[-1][0]<=Time_end:
         delta_time = leg.t[-1][0] - t_pre
         tau,e_pre = leg_control.stance(slider_h, leg.Jc, intp_gf(TAU), intp_y(TAU),delta_time, e_pre)
         
+        slip_gf_list.append(intp_gf(TAU))
+        time_list.append(leg.t[-1][0])
+
         tau[0] = 0
         print("tau at the contact: ", tau)
         leg.tt_h = t_td #TODO
         leg.tl_h = t_lo #TODO
         leg.slip_st_dur = leg.tl_h-leg.tt_h
+        print("foot position in landing: ",leg.computeFootState('h'))
 
         t_pre = leg.t[-1][0]
         
         
     else:
         tau = leg_control.flight(leg.q[-1,:],leg.qdot[-1,:])
-        
+        slip_gf_list.append(0)
+        time_list.append(leg.t[-1][0])
+
+
         tau[0] = 0
         first_check=0
         
@@ -153,6 +165,7 @@ while leg.t[-1][0]<=Time_end:
     h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])
     time_now = leg.t[-1,:]
     t.append(time_now)
+
     
 
 plt.figure()
@@ -162,4 +175,12 @@ plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
 plt.legend(["simulation", "slip model"], loc ="upper right")
 plt.show()
 robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
-Plot_contact_force(leg)
+# plt.figure()
+# plt.plot(time_list, slip_gf_list)
+# plt.show()
+Plot_contact_force(leg, time_list, slip_gf_list)
+
+
+
+
+

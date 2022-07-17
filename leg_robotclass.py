@@ -733,7 +733,7 @@ class leg_robotclass(object):
        if t - tt < .25 * self.slip_st_dur:
            return -1
        else:
-           return - self.Lambda[(leg - 1) * 2 + 1]
+           return - self.Lambda[(leg - 1) * 3 + 2]
 
 #            if leg == 1: return t - self.tt_h - self.slip_st_dur
 #            elif leg == 2: return t - self.tt_f - self.slip_st_dur

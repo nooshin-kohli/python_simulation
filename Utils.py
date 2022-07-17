@@ -226,7 +226,7 @@ def Plot_foot_tip(cr):
     return None
     
     
-def Plot_contact_force(cr):
+def Plot_contact_force(cr,time_list, slip_gf_list):
     p = cr.getContactFeet(True)
     for leg in [1]:  
         force = []
@@ -248,6 +248,7 @@ def Plot_contact_force(cr):
         plt.title('foot '+repr(leg))
         plt.grid(1)
         plt.plot(cr.t[:-1], force, '*-')
+        plt.plot(time_list, slip_gf_list)
         plt.ylabel('ground reaction force')
         plt.legend(['x', 'y', 'z'])
         f = zoom_factory(ax)
