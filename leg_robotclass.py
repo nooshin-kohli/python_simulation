@@ -513,6 +513,10 @@ class leg_robotclass(object):
 
     def __calculateBodyCOM(self, q, dq, calc_velocity, update, body_part):
         if body_part == 'h':
+            p0 = self.CalcBodyToBase(self.model.GetBodyId('jump'),
+                                     np.array([0.03, 0, 0.0]),
+                                     update_kinematics=update,
+                                     q=q, qdot=dq, calc_velocity=calc_velocity)
             p1 = self.CalcBodyToBase(self.model.GetBodyId('hip'),
                                      np.array([0.03, 0, 0.0]),
                                      update_kinematics=update,
@@ -527,38 +531,15 @@ class leg_robotclass(object):
                                      q=q, qdot=dq, calc_velocity=calc_velocity)
 
             if not calc_velocity:
-                com = (self.mass_hip * p1 + self.mass_thigh * p2 + self.mass_calf * p3) / \
-                      (self.mass_hip + self.mass_thigh + self.mass_calf)
+                com = (2*p0+self.mass_hip * p1 + self.mass_thigh * p2 + self.mass_calf * p3) / \
+                      (2+self.mass_hip + self.mass_thigh + self.mass_calf)
                 vel = None
             else:
-                com = (self.mass_hip * p1[0] + self.mass_thigh * p2[0] + self.mass_calf * p3[0]) / \
-                      (self.mass_hip + self.mass_thigh + self.mass_calf)
-                vel = (self.mass_hip * p1[1] + self.mass_thigh * p2[1] + self.mass_calf * p3[1]) / \
-                      (self.mass_hip + self.mass_thigh + self.mass_calf)
+                com = (2*p0[0]+self.mass_hip * p1[0] + self.mass_thigh * p2[0] + self.mass_calf * p3[0]) / \
+                      (2+self.mass_hip + self.mass_thigh + self.mass_calf)
+                vel = (2*p0[1]+self.mass_hip * p1[1] + self.mass_thigh * p2[1] + self.mass_calf * p3[1]) / \
+                      (2+self.mass_hip + self.mass_thigh + self.mass_calf)
 
-        # if body_part == 'f':
-        #     p1 = self.CalcBodyToBase(self.body.id('b1f'),
-        #                              np.array([self.param.lg1f, 0., 0.]),
-        #                              update_kinematics = update,
-        #                              q = q, qdot = dq, calc_velocity = calc_velocity)
-        #     p2 = self.CalcBodyToBase(self.body.id('b2f'),
-        #                              np.array([self.param.lg2f, 0., 0.]),
-        #                              update_kinematics = update,
-        #                              q = q, qdot = dq, calc_velocity = calc_velocity)
-        #     p3 = self.CalcBodyToBase(self.body.id('b3f'),
-        #                              np.array([self.param.lg3f, 0., 0.]),
-        #                              update_kinematics = update,
-        #                              q = q, qdot = dq, calc_velocity = calc_velocity)
-        #
-        #     if not calc_velocity:
-        #         com = (self.param.m1f*p1 + self.param.m2f*p2 + self.param.m3f*p3)/\
-        #           (self.param.m1f + self.param.m2f + self.param.m3f)
-        #         vel = None
-        #     else:
-        #         com = (self.param.m1f*p1[0] + self.param.m2f*p2[0] + self.param.m3f*p3[0])/\
-        #           (self.param.m1f + self.param.m2f + self.param.m3f)
-        #         vel = (self.param.m1f*p1[1] + self.param.m2f*p2[1] + self.param.m3f*p3[1])/\
-        #           (self.param.m1f + self.param.m2f + self.param.m3f)
 
         return com, vel
 
@@ -580,20 +561,26 @@ class leg_robotclass(object):
             vel = rbdl.CalcPointVelocity(self.model, qq, \
                                          qqdot, body_id, body_point_position, update_kinematics)
             return pose, vel
+    def CalcJacobian14(self,model,q,body_id,point):
+        Jc = np.zeros((1, model.dof_count))
+        rbdl.CalcPointJacobian(model, q, body_id, point, Jc)
+        return Jc
 
     def computeJacobianCOM(self, body_part):
         bis = []
         pts = []
         ms = []
         if body_part == 'slider':
+            bis.append(self.model.GetBodyId('jump'))
             bis.append(self.model.GetBodyId('hip'))
             bis.append(self.model.GetBodyId('thigh'))
             bis.append(self.model.GetBodyId('calf'))
             ######################## from urdf model ########################
             pts.append(np.array([0.03, 0, 0.0]))
+            pts.append(np.array([0.03, 0, 0.0]))
             pts.append(np.array([0.0, 0.06, -0.02]))
             pts.append(np.array([0.0, 0.0, -0.240]))
-            ms = [self.mass_hip, self.mass_thigh, self.mass_calf]
+            ms = [2,self.mass_hip, self.mass_thigh, self.mass_calf]
 
         else:
             print("body part should be slider")
@@ -601,9 +588,10 @@ class leg_robotclass(object):
         J = np.zeros((3, self.qdim))
 
         for i, bi in enumerate(bis):
-            J += ms[i] * self.CalcJacobian(self.model, self.q, bi, pts[i])
+            J += ms[i] * self.CalcJacobian(self.model, self.q[-1,:], bi, pts[i])
 
         return J / sum(ms)
+
 
     def computeJacobianCOM23(self, body_part):
         J = self.computeJacobianCOM(body_part)
@@ -730,7 +718,7 @@ class leg_robotclass(object):
        elif leg == 2:
            print("leg 2 is added !!!!!!!")  # tt = self.tt_f
 
-       if t - tt < .25 * self.slip_st_dur:
+       if t - tt < .2 * self.slip_st_dur:
            return -1
        else:
            return - self.Lambda[(leg - 1) * 3 + 2]
