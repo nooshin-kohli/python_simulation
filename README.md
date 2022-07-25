@@ -28,4 +28,4 @@ Output should be somethig like picture below:
 
 ![alt text](sim_pic.png)
 
-​
+
