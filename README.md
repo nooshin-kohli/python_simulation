@@ -1,7 +1,7 @@
 
 # python_simulation
 
-This repository is a simulation of a monoped. Purpose of this simulation is to validate output of our controller. Initially, controller was examined on robot simulated in gazebo.(Here is the link to the repository: ). Since damping and friction had major impact on ground force reaction, new robot was simulated in python environment.
+This repository is a simulation of a monoped. Purpose of this simulation is to validate output of our controller. Initially, controller was examined on robot simulated in gazebo.(Here is the link to the repository: https://github.com/nooshin-kohli/simulation). Since damping and friction had major impact on ground force reaction, new robot was simulated in python environment.
 We used a slip model to generate the ground reaction force (hopper1d) and try to compute corresponding torques needed to be applied for each joints.
 
 
@@ -28,4 +28,4 @@ Output should be somethig like picture below:
 
 ![alt text](sim_pic.png)
 
-​
+
