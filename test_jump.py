@@ -42,7 +42,7 @@ def extract_data(input_f, input_h):
 ##################################importing the contact forces from slip model
 from object import data_input
 ##################### 
-h = data_input(dt=.001, m=4, L0=0.366 , k0=1200)#  0.329       0.362
+h = data_input(dt=.001, m=4, L0=0.366 , k0=800)#  0.329       0.362
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
 ################################## interpolate y_des & GF_contact
