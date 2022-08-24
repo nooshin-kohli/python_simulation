@@ -52,12 +52,12 @@ class leg_control(object):
         q = leg.q[-1,:]
         qdot = leg.qdot[-1,:]
 
-        p = 20000
+        p = 30000
         K_p = [[p, 0, 0],
                [0, p, 0],
                [0, 0, p]]
 
-        d= 450
+        d= 600
         K_d = [[d, 0, 0],
                [0, d, 0],
                [0, 0, d]]

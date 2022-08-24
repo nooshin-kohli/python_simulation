@@ -42,7 +42,7 @@ def extract_data(input_f, input_h):
 ##################################importing the contact forces from slip model
 from object import data_input
 ##################### 
-h = data_input(dt=.001, m=4, L0=0.366 , k0=800)#  0.329       0.362
+h = data_input(dt=.001, m=4, L0=0.366 , k0=1200)#  0.329       0.362
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
 ################################## interpolate y_des & GF_contact
@@ -53,9 +53,9 @@ intp_y = intp(tau_s, y_des_contact, k=1)
 intp_y_comp =  intp(time_test, h.function(3)[1], k=1)
 
 ################################# plotting ground force from slip model
-xs = np.linspace(0, 1, 1000)
-plt.plot(xs, intp_gf(xs), 'r', lw=3, alpha=0.7)
-plt.show()
+#xs = np.linspace(0, 1, 1000)
+#plt.plot(xs, intp_gf(xs), 'r', lw=3, alpha=0.7)
+#plt.show()
 
 ################################# Assigning dynamic parameters  
 t = np.array([0])
@@ -97,6 +97,15 @@ time_list=[]
 p_gain_list=[]
 d_gain_list=[]
 y0 = 0
+q_hip = []
+q_thigh = []
+q_calf = []
+q_hip_t = []
+q_thigh_t = []
+q_calf_t = []
+hip_command = []
+thigh_command = []
+calf_command = []
 
 while leg.t[-1][0]<=Time_end:
 
@@ -133,6 +142,15 @@ while leg.t[-1][0]<=Time_end:
         print("foot position in landing: ",leg.computeFootState('h'))
 
         t_pre = leg.t[-1][0]
+        q_hip.append(leg.q[-1,1])
+        q_thigh.append(leg.q[-1,2])
+        q_calf.append(leg.q[-1,3])
+        q_hip_t.append(leg.q[-1,1])
+        q_thigh_t.append(leg.q[-1,2])
+        q_calf_t.append(leg.q[-1,3])
+        hip_command.append(leg.q[-1,1])
+        thigh_command.append(leg.q[-1,2])
+        calf_command.append(leg.q[-1,3])
         
         
     else:
@@ -144,26 +162,203 @@ while leg.t[-1][0]<=Time_end:
         tau[0] = 0
         first_check=0
         t_pre = leg.t[-1][0]
+        q_hip_t.append(0.0231)
+        q_thigh_t.append(0.8)
+        q_calf_t.append(-1.2)
+        q_hip.append(leg.q[-1,1])
+        q_thigh.append(leg.q[-1,2])
+        q_calf.append(leg.q[-1,3])
+        hip_command.append(0.0231)
+        thigh_command.append(0.8)
+        calf_command.append(-1.2)
     leg()
+    # q_calf.append(leg.q[-1,3])
     h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])
     COM = leg.get_com(calc_velocity=True,body_part='h')
     slider_h2 = leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2]
     time_now = leg.t[-1,:]
     t.append(time_now)
 
-    
+# print("q is: ")   
+# print(leg.q)
 
-plt.figure()
-plt.title("slip height")
-plt.plot(t,h_vec,'r')
-plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
-plt.legend(["simulation", "slip model"], loc ="upper right")
 
+from scipy.signal import find_peaks
+import xlsxwriter
+
+global row, col
+
+row=1
+col=0
+
+workbook = xlsxwriter.Workbook('/home/lenovo/python_simulation/tuning_result.xlsx')
+
+#worksheet name
+worksheet = workbook.add_worksheet("results")
+
+worksheet.write(0, 0, "t")
+worksheet.write(0, 1, "hip")
+worksheet.write(0, 2, "thigh")
+worksheet.write(0, 3, "calf")
+
+#plt.figure()
+#plt.plot(t,q_hip)
+#plt.plot(t,hip_command)
+#plt.title("hip position")
+#plt.legend(["actual", "command"], loc ="upper left")
+from scipy.signal import find_peaks
+peaks, _ = find_peaks(q_hip_t, height=0)
+print("*************************************************", peaks)
+#plt.figure()
+#plt.plot(t,q_thigh)
+#plt.plot(t,thigh_command)
+#plt.title("thigh position")
+#plt.legend(["actual", "command"], loc ="upper left")
+#plt.figure()
+#plt.plot(t,q_calf)
+#plt.plot(t,calf_command)
+#plt.title("calf position")
+#plt.legend(["actual", "command"], loc ="upper left")
+#plt.figure()
+#plt.title("slip height")
+#plt.plot(t,h_vec,'r')
+#plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
+#plt.legend(["simulation", "slip model"], loc ="upper right")
+
+#plt.figure()
+#plt.plot(time_list,p_gain_list,'r')
+#plt.plot(time_list, d_gain_list,'b')
+#plt.legend(["p_gain", "d_gain"], loc ="upper right")
+#plt.show()
+hardware_hip=[]
+r = 195
+L0=0.366
+time_xl = []
+while 1:
+    if q_hip_t[r] == 0.0231:
+        break
+    else:
+        time_xl.append(t[r][-1]) 
+        r = r+1
+while(1):
+    if (255<r<579):
+        time_xl.append(t[r][-1])
+        r = r+1
+    else:
+        break   
+print("time", time_xl)
+r =195
+while 1:
+    if q_hip_t[r] == 0.0231:
+        break
+    else:
+        hardware_hip.append(q_hip_t[r]) 
+        r = r+1
+while(1):
+    if (255<r<579):
+        hardware_hip.append(q_hip_t[r])
+        r = r+1
+    else:
+        break
+# while(1):
+#     if (302<r<783):
+#         hardware_hip.append(q_hip_t[r])
+#         r = r+1
+#     else:
+#         break
+
+hardware_thigh = []
+r=195
+while 1:
+    if q_thigh_t[r] ==0.8:
+        break
+    else:
+        hardware_thigh.append(q_thigh_t[r]) 
+        r = r+1
+while (1):
+    if (255<r<579):
+        hardware_thigh.append(q_thigh_t[r])
+        r = r+1
+    else:
+        break
+hardware_calf = []
+# r=259
+r = 195
+while 1:
+    if q_calf_t[r] == -1.2:
+        print("final data in stance mode:", r)
+        break
+    else:
+        hardware_calf.append(q_calf_t[r]) 
+        r = r+1
+
+while(1):
+    if (255<r<579):
+        hardware_calf.append(q_calf_t[r])
+        r = r+1
+    else:
+        break
+
+print("############# hip:",hardware_hip)
+print("############# thigh",hardware_thigh)
+print("############# calf",hardware_calf)
 plt.figure()
-plt.plot(time_list,p_gain_list,'r')
-plt.plot(time_list, d_gain_list,'b')
-plt.legend(["p_gain", "d_gain"], loc ="upper right")
+plt.plot(time_xl,hardware_hip)
+plt.title("hip in comp")
+plt.figure()
+plt.plot(time_xl,hardware_thigh)
+plt.title("thigh in comp")
+plt.figure()
+plt.plot(time_xl,hardware_calf)
+plt.title("calf in comp")
+
+################################################## data saving
+# for data in range(len(hardware_hip)):
+#     worksheet.write(row, col, time_xl[data])
+#     worksheet.write(row, col+1, hardware_hip[data])
+#     worksheet.write(row, col+2, hardware_thigh[data])
+#     worksheet.write(row, col+3, hardware_calf[data])
+#     row = row+1
+# workbook.close()  
 plt.show()
 
+q_hip = np.array(q_hip_t)
+q_max_hip = q_hip.max()
+# print("q_max_hip")
+# print(q_max_hip)
+
+# mask = np.array(q_hip_t) == q_max_hip
+# t_m = np.where(mask)
+# print("t_m:", t_m[0][-1])
+# print("first maximum Compression accurs in time: ",t[t_m[0][-1]][-1])
+
+q_thigh = np.array(q_thigh_t)
+q_max_thigh = q_thigh.max()
+# print("q_max_tigh")
+# print(q_max_thigh)
+
+q_calf = np.array(q_calf_t)
+q_min_calf = q_calf.min()
+# print("q_min_calf")
+# print(q_min_calf)
+# q_final = [q_max_hip,q_max_thigh,q_min_calf]
+q_hip_hardware =[]
+
+    
+# for i in range(len(t)):
+
+# for h in h_vec:
+#     if h == L0:
+#         print(r)
+#     r = r+1    
+        
+# for q in q_hip:
+#     if not q==0:
+#         q_hip_hardware.append(q)
+
+# print(q_hip_hardware[259])    
+
+# print("In  maximum compression joint states are: ", q_final)
 robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
 Plot_contact_force(leg, time_list, slip_gf_list)
+
