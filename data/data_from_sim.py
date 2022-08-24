@@ -44,7 +44,7 @@ with open("thigh_46.txt","r") as file:
 
 with open("calf_46.txt","w") as file:
     file.write(str(calf_d))
-with open("calf.txt","r") as file:
+with open("calf_46.txt","r") as file:
     data4 = eval(file.readline())
 #print(len(time_d))
 #print(len(hip_d))

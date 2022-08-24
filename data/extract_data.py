@@ -22,9 +22,9 @@ class DATA():
                 self.calf = eval(file.readline())    
         
     def get_data(self):
-        self.hip = np.array(self.data2)
-        self.thigh = np.array(self.data3)
-        self.calf = np.array(self.data4)
+        self.hip = np.array(self.hip)
+        self.thigh = np.array(self.thigh)
+        self.calf = np.array(self.calf)
         A = np.vstack((self.hip,self.thigh))
         result = np.vstack((A,self.calf))
 
