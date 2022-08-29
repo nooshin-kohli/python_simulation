@@ -107,6 +107,16 @@ hip_command = []
 thigh_command = []
 calf_command = []
 
+qdot_hip_t=[]
+qdot_thigh_t= []
+qdot_calf_t = []
+qdot_hip = []
+qdot_thigh=[]
+qdot_calf = []
+hip_vel_command=[]
+thigh_vel_command = []
+calf_vel_command = []
+
 while leg.t[-1][0]<=Time_end:
 
     leg.set_input(tau)
@@ -151,6 +161,17 @@ while leg.t[-1][0]<=Time_end:
         hip_command.append(leg.q[-1,1])
         thigh_command.append(leg.q[-1,2])
         calf_command.append(leg.q[-1,3])
+        ################################
+        qdot_hip.append(leg.qdot[-1,1])
+        qdot_thigh.append(leg.qdot[-1,2])
+        qdot_calf.append(leg.qdot[-1,3])
+        qdot_hip_t.append(leg.qdot[-1,1])
+        qdot_thigh_t.append(leg.qdot[-1,2])
+        qdot_calf_t.append(leg.qdot[-1,3])
+        hip_vel_command.append(leg.qdot[-1,1])
+        thigh_vel_command.append(leg.qdot[-1,2])
+        thigh_vel_command.append(leg.qdot[-1,3])
+
         
         
     else:
@@ -171,6 +192,16 @@ while leg.t[-1][0]<=Time_end:
         hip_command.append(0.0231)
         thigh_command.append(0.8)
         calf_command.append(-1.2)
+        ################################## qdot
+        qdot_hip_t.append(0)
+        qdot_thigh_t.append(0)
+        qdot_calf_t.append(0)
+        qdot_hip.append(leg.qdot[-1,1])
+        qdot_thigh.append(leg.qdot[-1,2])
+        qdot_calf.append(leg.qdot[-1,3])
+        hip_vel_command.append(0)
+        thigh_vel_command.append(0)
+        calf_vel_command.append(0)
     leg()
     # q_calf.append(leg.q[-1,3])
     h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])
@@ -231,31 +262,35 @@ print("*************************************************", peaks)
 #plt.legend(["p_gain", "d_gain"], loc ="upper right")
 #plt.show()
 hardware_hip=[]
-r = 195
+# r = 193
+r = peaks[0]
 L0=0.366
 time_xl = []
 while 1:
     if q_hip_t[r] == 0.0231:
+        final = r
         break
     else:
         time_xl.append(t[r][-1]) 
         r = r+1
 while(1):
-    if (255<r<579):
+    if (final-1<r<peaks[1]+1):
         time_xl.append(t[r][-1])
         r = r+1
     else:
         break   
 print("time", time_xl)
-r =195
+# r =195
+r = peaks[0]
 while 1:
     if q_hip_t[r] == 0.0231:
+        final = r
         break
     else:
         hardware_hip.append(q_hip_t[r]) 
         r = r+1
 while(1):
-    if (255<r<579):
+    if (final-1<r<peaks[1]+1):
         hardware_hip.append(q_hip_t[r])
         r = r+1
     else:
@@ -268,37 +303,39 @@ while(1):
 #         break
 
 hardware_thigh = []
-r=195
+# r=195
+r = peaks[0]
 while 1:
     if q_thigh_t[r] ==0.8:
+        final = r
         break
     else:
         hardware_thigh.append(q_thigh_t[r]) 
         r = r+1
 while (1):
-    if (255<r<579):
+    if (final-1<r<peaks[1]+1):
         hardware_thigh.append(q_thigh_t[r])
         r = r+1
     else:
         break
 hardware_calf = []
 # r=259
-r = 195
+# r = 195
+r = peaks[0]
 while 1:
     if q_calf_t[r] == -1.2:
-        print("final data in stance mode:", r)
+        final = r
         break
     else:
         hardware_calf.append(q_calf_t[r]) 
         r = r+1
 
 while(1):
-    if (255<r<579):
+    if (final-1<r<peaks[1]+1):
         hardware_calf.append(q_calf_t[r])
         r = r+1
     else:
         break
-
 print("############# hip:",hardware_hip)
 print("############# thigh",hardware_thigh)
 print("############# calf",hardware_calf)
@@ -311,6 +348,77 @@ plt.title("thigh in comp")
 plt.figure()
 plt.plot(time_xl,hardware_calf)
 plt.title("calf in comp")
+plt.show()
+
+
+hardware_hip_vel=[]
+r = peaks[0]
+while 1:
+    if qdot_hip_t[r] ==0:
+        final = r
+        break
+    else:
+        hardware_hip_vel.append(qdot_hip_t[r]) 
+        r = r+1
+while (1):
+    if (final-1<r<peaks[1]+1):
+        hardware_hip_vel.append(qdot_hip_t[r])
+        r = r+1
+    else:
+        break
+
+
+hardware_thigh_vel = []
+# r=195
+r = peaks[0]
+while 1:
+    if qdot_thigh_t[r] ==0:
+        final = r
+        break
+    else:
+        hardware_thigh_vel.append(qdot_thigh_t[r]) 
+        r = r+1
+while (1):
+    if (final-1<r<peaks[1]+1):
+        hardware_thigh_vel.append(qdot_thigh_t[r])
+        r = r+1
+    else:
+        break
+hardware_calf_vel = []
+# r=259
+# r = 195
+r = peaks[0]
+while 1:
+    if qdot_calf_t[r] == 0:
+        final = r
+        break
+    else:
+        hardware_calf_vel.append(qdot_calf_t[r]) 
+        r = r+1
+
+while(1):
+    if (final-1<r<peaks[1]+1):
+        hardware_calf_vel.append(qdot_calf_t[r])
+        r = r+1
+    else:
+        break
+    
+print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+print(len(hardware_calf))
+print(len(hardware_calf_vel))
+print("############# hip vel:",hardware_hip_vel)
+print("############# thigh vel",hardware_thigh_vel)
+print("############# calf vel",hardware_calf_vel)
+plt.figure()
+plt.plot(time_xl,hardware_hip_vel)
+plt.title("vel hip in comp")
+plt.figure()
+plt.plot(time_xl,hardware_thigh_vel)
+plt.title("vel thigh in comp")
+plt.figure()
+plt.plot(time_xl,hardware_calf_vel)
+plt.title("vel calf in comp")
+
 
 ################################################## data saving
 # for data in range(len(hardware_hip)):
