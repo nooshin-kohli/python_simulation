@@ -7,8 +7,12 @@ from __future__ import division
 from pickle import NONE
 
 import sys
+from os.path import expanduser
 
-
+home = expanduser("~")
+dir = home + '/rbdl/build/python'
+sys.path.append(dir)
+import rbdl
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -42,7 +46,7 @@ def extract_data(input_f, input_h):
 ##################################importing the contact forces from slip model
 from object import data_input
 ##################### 
-h = data_input(dt=.001, m=4, L0=0.366 , k0=1200)#  0.329       0.362
+h = data_input(dt=.001, m=4, L0=0.366 , k0=900)#  0.329       0.362
 GF_contact, y_des_contact = extract_data(h.function(3)[0], h.function(3)[1])
 
 ################################## interpolate y_des & GF_contact
@@ -97,25 +101,44 @@ time_list=[]
 p_gain_list=[]
 d_gain_list=[]
 y0 = 0
+#### list for saving actual position and velocity of joints 
+########## position data:
 q_hip = []
 q_thigh = []
 q_calf = []
+########## velocity data:
+qdot_hip = []
+qdot_thigh=[]
+qdot_calf = []
+
+#### list for cropping data for real robot
+########## position data:
+q_slider_t = []
 q_hip_t = []
 q_thigh_t = []
 q_calf_t = []
 hip_command = []
 thigh_command = []
 calf_command = []
-
+########## velocity data:
+qdot_slider_t = []
 qdot_hip_t=[]
 qdot_thigh_t= []
 qdot_calf_t = []
-qdot_hip = []
-qdot_thigh=[]
-qdot_calf = []
-hip_vel_command=[]
-thigh_vel_command = []
-calf_vel_command = []
+
+
+
+
+slider_contact = []
+slider_flight = []
+t_contact  = []
+t_flight = []
+tau_hip = []
+tau_thigh = []
+tau_calf = []
+ydot_des = []
+
+phase = []
 
 while leg.t[-1][0]<=Time_end:
 
@@ -133,6 +156,7 @@ while leg.t[-1][0]<=Time_end:
         ################################################################ FOR PID CONTROLLER 
         ydot_d = (intp_y(TAU) - y0)/delta_time                # 0.01 is the step size in slip model
         y0 = intp_y(TAU)
+        ydot_des.append(ydot_d)
 
         tau,e_pre, p_gain, d_gain = leg_control.stance(slider_h, leg.Jc,\
              intp_gf(TAU), intp_y(TAU),delta_time, e_pre,leg,ydot_d)
@@ -152,6 +176,15 @@ while leg.t[-1][0]<=Time_end:
         print("foot position in landing: ",leg.computeFootState('h'))
 
         t_pre = leg.t[-1][0]
+        tau_hip.append(tau[1])
+        tau_thigh.append(tau[2])
+        tau_calf.append(tau[3])
+
+
+        t_contact.append(leg.t[-1][0])
+        slider_contact.append(leg.qdot[-1,0])
+
+        q_slider_t.append(leg.q[-1,0])
         q_hip.append(leg.q[-1,1])
         q_thigh.append(leg.q[-1,2])
         q_calf.append(leg.q[-1,3])
@@ -162,19 +195,20 @@ while leg.t[-1][0]<=Time_end:
         thigh_command.append(leg.q[-1,2])
         calf_command.append(leg.q[-1,3])
         ################################
+        qdot_slider_t.append(leg.qdot[-1,0])
         qdot_hip.append(leg.qdot[-1,1])
         qdot_thigh.append(leg.qdot[-1,2])
         qdot_calf.append(leg.qdot[-1,3])
         qdot_hip_t.append(leg.qdot[-1,1])
         qdot_thigh_t.append(leg.qdot[-1,2])
         qdot_calf_t.append(leg.qdot[-1,3])
-        hip_vel_command.append(leg.qdot[-1,1])
-        thigh_vel_command.append(leg.qdot[-1,2])
-        thigh_vel_command.append(leg.qdot[-1,3])
+        phase.append(1)
+        
 
         
         
     else:
+        phase.append(0)
         tau = leg_control.flight(leg.q[-1,:],leg.qdot[-1,:])
         slip_gf_list.append(0)
         p_gain_list.append(0)
@@ -183,6 +217,15 @@ while leg.t[-1][0]<=Time_end:
         tau[0] = 0
         first_check=0
         t_pre = leg.t[-1][0]
+
+        t_flight.append(leg.t[-1][0])
+        slider_flight.append(leg.qdot[-1,0])
+        q_slider_t.append(leg.q[-1,0])
+
+        tau_hip.append(tau[1])
+        tau_thigh.append(tau[2])
+        tau_calf.append(tau[3])
+
         q_hip_t.append(0.0231)
         q_thigh_t.append(0.8)
         q_calf_t.append(-1.2)
@@ -193,15 +236,14 @@ while leg.t[-1][0]<=Time_end:
         thigh_command.append(0.8)
         calf_command.append(-1.2)
         ################################## qdot
+        qdot_slider_t.append(leg.qdot[-1,0])
         qdot_hip_t.append(0)
         qdot_thigh_t.append(0)
         qdot_calf_t.append(0)
         qdot_hip.append(leg.qdot[-1,1])
         qdot_thigh.append(leg.qdot[-1,2])
         qdot_calf.append(leg.qdot[-1,3])
-        hip_vel_command.append(0)
-        thigh_vel_command.append(0)
-        calf_vel_command.append(0)
+        
     leg()
     # q_calf.append(leg.q[-1,3])
     h_vec.append(leg.CalcBodyToBase(leg.model.GetBodyId('jump'),np.array([0.,0.,0.]))[2])
@@ -210,59 +252,81 @@ while leg.t[-1][0]<=Time_end:
     time_now = leg.t[-1,:]
     t.append(time_now)
 
-# print("q is: ")   
-# print(leg.q)
-
-
-from scipy.signal import find_peaks
-import xlsxwriter
-
-global row, col
-
-row=1
-col=0
-
-workbook = xlsxwriter.Workbook('/home/lenovo/python_simulation/tuning_result.xlsx')
-
-#worksheet name
-worksheet = workbook.add_worksheet("results")
-
-worksheet.write(0, 0, "t")
-worksheet.write(0, 1, "hip")
-worksheet.write(0, 2, "thigh")
-worksheet.write(0, 3, "calf")
-
-#plt.figure()
-#plt.plot(t,q_hip)
-#plt.plot(t,hip_command)
-#plt.title("hip position")
-#plt.legend(["actual", "command"], loc ="upper left")
+#################################### Find peaks in hip/thigh/calf data for finding maximum compression config
 from scipy.signal import find_peaks
 peaks, _ = find_peaks(q_hip_t, height=0)
 print("*************************************************", peaks)
-#plt.figure()
-#plt.plot(t,q_thigh)
-#plt.plot(t,thigh_command)
-#plt.title("thigh position")
-#plt.legend(["actual", "command"], loc ="upper left")
-#plt.figure()
-#plt.plot(t,q_calf)
-#plt.plot(t,calf_command)
-#plt.title("calf position")
-#plt.legend(["actual", "command"], loc ="upper left")
-#plt.figure()
-#plt.title("slip height")
-#plt.plot(t,h_vec,'r')
-#plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
-#plt.legend(["simulation", "slip model"], loc ="upper right")
 
-#plt.figure()
-#plt.plot(time_list,p_gain_list,'r')
-#plt.plot(time_list, d_gain_list,'b')
-#plt.legend(["p_gain", "d_gain"], loc ="upper right")
-#plt.show()
+#################################### We want our slip model velocity
+H = h.function(3)[1]
+for i in range(len(h.function(3)[1])-1):
+    h1 = h.function(3)[1][i]
+    h2 = h.function(3)[1][i+1]
+    ### dt=0.001
+    vel = (h2-h1)/0.001
+    ydot_des.append(vel)
+
+
+#################################### Plots
+plt.figure()
+plt.plot(t,phase)
+plt.plot(t,qdot_slider_t)
+plt.plot(t,q_hip)
+plt.plot(t,q_thigh)
+plt.plot(t,q_calf)
+plt.title("qdot of slider")
+plt.legend(["phase","qdot slider","q_hip","q_thigh","q_calf"], loc = 'lower right')
+
+plt.show() 
+# plt.figure()
+# plt.plot(t,q_slider_t)
+# plt.plot(t,qdot_slider_t)
+# plt.title("position and velocity of slider joint")
+# # plt.show()
+# #plt.plot(t,hip_command)
+# #plt.title("hip position")
+# #plt.legend(["actual", "command"], loc ="upper left")
+
+# plt.figure()
+# plt.plot(ydot_des)
+# plt.title("velocity of model")
+# plt.show()
+
+# plt.show()
+
+plt.figure()
+plt.plot(t,tau_hip)
+plt.plot(t,tau_thigh)
+plt.plot(t,tau_calf)
+plt.legend(["hip", "thigh", "calf"], loc ="upper right")
+plt.title("Efforts commanded to motors")
+plt.show()
+
+# plt.figure()
+# plt.plot(t,q_thigh)
+# plt.plot(t,thigh_command)
+# plt.title("thigh position")
+# plt.legend(["actual", "command"], loc ="upper left")
+# plt.figure()
+# plt.plot(t,q_calf)
+# plt.plot(t,calf_command)
+# plt.title("calf position")
+# plt.legend(["actual", "command"], loc ="upper left")
+plt.figure()
+plt.title("slip height")
+plt.plot(t,h_vec,'r')
+plt.plot(np.linspace(0,3, num=len(h.function(3)[1])),h.function(3)[1],'g')
+plt.legend(["simulation", "slip model"], loc ="upper right")
+
+
+plt.figure()
+plt.plot(time_list,p_gain_list,'r')
+plt.plot(time_list, d_gain_list,'b')
+plt.legend(["p_gain", "d_gain"], loc ="upper right")
+plt.show()
+
+################################################### extract data for hopping in hardware:
 hardware_hip=[]
-# r = 193
 r = peaks[0]
 L0=0.366
 time_xl = []
@@ -280,7 +344,6 @@ while(1):
     else:
         break   
 print("time", time_xl)
-# r =195
 r = peaks[0]
 while 1:
     if q_hip_t[r] == 0.0231:
@@ -295,15 +358,7 @@ while(1):
         r = r+1
     else:
         break
-# while(1):
-#     if (302<r<783):
-#         hardware_hip.append(q_hip_t[r])
-#         r = r+1
-#     else:
-#         break
-
 hardware_thigh = []
-# r=195
 r = peaks[0]
 while 1:
     if q_thigh_t[r] ==0.8:
@@ -319,8 +374,6 @@ while (1):
     else:
         break
 hardware_calf = []
-# r=259
-# r = 195
 r = peaks[0]
 while 1:
     if q_calf_t[r] == -1.2:
@@ -336,19 +389,9 @@ while(1):
         r = r+1
     else:
         break
-print("############# hip:",hardware_hip)
-print("############# thigh",hardware_thigh)
-print("############# calf",hardware_calf)
-plt.figure()
-plt.plot(time_xl,hardware_hip)
-plt.title("hip in comp")
-plt.figure()
-plt.plot(time_xl,hardware_thigh)
-plt.title("thigh in comp")
-plt.figure()
-plt.plot(time_xl,hardware_calf)
-plt.title("calf in comp")
-plt.show()
+
+q_slider_liftoff = q_slider_t[final-1]
+qdot_slider_liftoff = qdot_slider_t[final-1]
 
 
 hardware_hip_vel=[]
@@ -369,7 +412,6 @@ while (1):
 
 
 hardware_thigh_vel = []
-# r=195
 r = peaks[0]
 while 1:
     if qdot_thigh_t[r] ==0:
@@ -385,8 +427,6 @@ while (1):
     else:
         break
 hardware_calf_vel = []
-# r=259
-# r = 195
 r = peaks[0]
 while 1:
     if qdot_calf_t[r] == 0:
@@ -402,71 +442,45 @@ while(1):
         r = r+1
     else:
         break
-    
-print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-print(len(hardware_calf))
-print(len(hardware_calf_vel))
-print("############# hip vel:",hardware_hip_vel)
-print("############# thigh vel",hardware_thigh_vel)
-print("############# calf vel",hardware_calf_vel)
-plt.figure()
-plt.plot(time_xl,hardware_hip_vel)
-plt.title("vel hip in comp")
-plt.figure()
-plt.plot(time_xl,hardware_thigh_vel)
-plt.title("vel thigh in comp")
-plt.figure()
-plt.plot(time_xl,hardware_calf_vel)
-plt.title("vel calf in comp")
+############################################## Position data for hardware:
+# print("############# hip:",hardware_hip)
+# print("############# thigh",hardware_thigh)
+# print("############# calf",hardware_calf)
+# plt.figure()
+# plt.plot(time_xl, hardware_hip)
+# plt.title("hip in comp")
+# plt.figure()
+# plt.plot(time_xl, hardware_thigh)
+# plt.title("thigh in comp")
+# plt.figure()
+# plt.plot(time_xl, hardware_calf)
+# plt.title("calf in comp")
+############################################## Velocity data for hardware:
+# print("############# hip vel:",hardware_hip_vel)
+# print("############# thigh vel",hardware_thigh_vel)
+# print("############# calf vel",hardware_calf_vel)
+# plt.figure()
+# plt.plot(time_xl,hardware_hip_vel)
+# plt.title("vel hip in comp")
+# plt.figure()
+# plt.plot(time_xl,hardware_thigh_vel)
+# plt.title("vel thigh in comp")
+# plt.figure()
+# plt.plot(time_xl,hardware_calf_vel)
+# plt.title("vel calf in comp")
+
+# plt.show()
 
 
-################################################## data saving
-# for data in range(len(hardware_hip)):
-#     worksheet.write(row, col, time_xl[data])
-#     worksheet.write(row, col+1, hardware_hip[data])
-#     worksheet.write(row, col+2, hardware_thigh[data])
-#     worksheet.write(row, col+3, hardware_calf[data])
-#     row = row+1
-# workbook.close()  
-plt.show()
-
+################################## Find maximum iin data
 q_hip = np.array(q_hip_t)
 q_max_hip = q_hip.max()
-# print("q_max_hip")
-# print(q_max_hip)
-
-# mask = np.array(q_hip_t) == q_max_hip
-# t_m = np.where(mask)
-# print("t_m:", t_m[0][-1])
-# print("first maximum Compression accurs in time: ",t[t_m[0][-1]][-1])
-
 q_thigh = np.array(q_thigh_t)
 q_max_thigh = q_thigh.max()
-# print("q_max_tigh")
-# print(q_max_thigh)
-
 q_calf = np.array(q_calf_t)
 q_min_calf = q_calf.min()
-# print("q_min_calf")
-# print(q_min_calf)
-# q_final = [q_max_hip,q_max_thigh,q_min_calf]
-q_hip_hardware =[]
 
-    
-# for i in range(len(t)):
-
-# for h in h_vec:
-#     if h == L0:
-#         print(r)
-#     r = r+1    
-        
-# for q in q_hip:
-#     if not q==0:
-#         q_hip_hardware.append(q)
-
-# print(q_hip_hardware[259])    
-
-# print("In  maximum compression joint states are: ", q_final)
+####################################################### Animation of simulation:
 robot_anim = Anim_leg(leg.model, leg.body, leg.joint, leg.q, leg.t)
 Plot_contact_force(leg, time_list, slip_gf_list)
 

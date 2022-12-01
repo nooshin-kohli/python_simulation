@@ -341,11 +341,11 @@ class leg_robotclass(object):
         return M
 
     def Calch(self, model, q, qdot):
-        c = 0.8
+        # c = 0.8
         # print("qdot:",qdot)
         h = np.zeros(model.q_size)
         rbdl.InverseDynamics(model, q, qdot, np.zeros(model.qdot_size), h)
-        h = h - [c*qdot[0],0,0,0]
+        # h = h - [c*qdot[0],0,0,0]
         return h
 
     def CalcJacobian(self, model, q, bodyid, point):
